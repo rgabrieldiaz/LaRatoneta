@@ -30,17 +30,25 @@ export function HeroStats({
   const remainingARS = salaryARS - totalARS;
   const isOverBudget = remainingARS < 0;
 
-  // Daily average
+  // Daily average & Ticket average
+  const arsExpenses = expenses.filter(e => e.currency === 'ARS');
   const uniqueDays = new Set(expenses.map(e => e.date)).size || 1;
   const dailyAverageARS = Math.round(totalARS / uniqueDays);
+  const averageTicketARS = arsExpenses.length > 0 ? Math.round(totalARS / arsExpenses.length) : 0;
+
+  // Highest single expense of the period
+  const highestExpense = arsExpenses.reduce<Expense | null>(
+    (max, e) => (!max || e.amount > max.amount ? e : max),
+    null
+  );
 
   // Cash vs Account vs Credit Breakdown
-  const cashARS = expenses
-    .filter(e => e.currency === 'ARS' && e.method === 'EFECTIVO')
+  const cashARS = arsExpenses
+    .filter(e => e.method === 'EFECTIVO')
     .reduce((sum, e) => sum + e.amount, 0);
 
-  const creditARS = expenses
-    .filter(e => e.currency === 'ARS' && e.method === 'CREDITO')
+  const creditARS = arsExpenses
+    .filter(e => e.method === 'CREDITO')
     .reduce((sum, e) => sum + e.amount, 0);
 
   const accountARS = totalARS - cashARS - creditARS;
@@ -48,18 +56,6 @@ export function HeroStats({
   const cashPct = totalARS > 0 ? Math.round((cashARS / totalARS) * 100) : 0;
   const creditPct = totalARS > 0 ? Math.round((creditARS / totalARS) * 100) : 0;
   const accountPct = totalARS > 0 ? Math.max(0, 100 - cashPct - creditPct) : 0;
-
-  // Category breakdown
-  const categoryTotals: Record<string, number> = {};
-  for (const e of expenses) {
-    if (e.currency === 'ARS') {
-      categoryTotals[e.category] = (categoryTotals[e.category] || 0) + e.amount;
-    }
-  }
-
-  const sortedCategories = Object.entries(categoryTotals)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 4);
 
   const formatARS = (val: number) => {
     return new Intl.NumberFormat('es-AR', {
@@ -89,7 +85,6 @@ export function HeroStats({
             <h2 className="text-sm sm:text-base font-black tracking-wider uppercase text-slate-800">
               BALANCE MENSUAL • {monthLabel.toUpperCase()}
             </h2>
-            <p className="text-xs font-bold text-slate-600">{expenses.length} gastos analizados</p>
           </div>
         </div>
 
@@ -144,16 +139,13 @@ export function HeroStats({
         </div>
 
         {/* Big Progress bar */}
-        <div className="w-full h-6 bg-[#EEEEEE] border-[3px] border-black rounded-lg relative overflow-hidden">
+        <div className="w-full h-5 bg-[#EEEEEE] border-[3px] border-black rounded-lg relative overflow-hidden">
           <div
             className={`h-full border-r-[3px] border-black transition-all duration-500 ${
               salaryPct > 90 ? 'bg-[#FF5376]' : salaryPct > 70 ? 'bg-[#FFE500]' : 'bg-[#22C55E]'
             }`}
             style={{ width: `${Math.min(salaryPct, 100)}%` }}
           />
-          <div className="absolute inset-0 flex items-center justify-end pr-3 pointer-events-none">
-            <span className="text-xs font-black text-black">{salaryPct}% del sueldo</span>
-          </div>
         </div>
       </div>
 
@@ -191,43 +183,25 @@ export function HeroStats({
         </div>
       </div>
 
-      {/* Quick Metrics Grid */}
+      {/* Quick Metrics Grid (Non-redundant, actionable stats) */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-1">
         <div className="bg-[#F8F8F8] border-[2px] border-black rounded-lg p-3 shadow-[2px_2px_0px_#000]">
-          <span className="text-xs font-black uppercase text-slate-500 block">PROMEDIO / DÍA</span>
+          <span className="text-xs font-black uppercase text-slate-500 block">📅 PROMEDIO / DÍA</span>
           <span className="text-lg sm:text-xl font-black text-black mt-1 block">{formatARS(dailyAverageARS)}</span>
         </div>
 
         <div className="bg-[#F8F8F8] border-[2px] border-black rounded-lg p-3 shadow-[2px_2px_0px_#000]">
-          <span className="text-xs font-black uppercase text-slate-500 block">DÍAS CON COMPRAS</span>
-          <span className="text-lg sm:text-xl font-black text-black mt-1 block">{uniqueDays} DÍAS</span>
+          <span className="text-xs font-black uppercase text-slate-500 block">🧾 TICKET PROMEDIO</span>
+          <span className="text-lg sm:text-xl font-black text-black mt-1 block">{formatARS(averageTicketARS)}</span>
         </div>
 
         <div className="col-span-2 sm:col-span-1 bg-[#F8F8F8] border-[2px] border-black rounded-lg p-3 shadow-[2px_2px_0px_#000]">
-          <span className="text-xs font-black uppercase text-slate-500 block">TOP CATEGORÍA</span>
-          <span className="text-sm font-black text-[#FF5376] mt-1 block truncate">
-            {sortedCategories[0]?.[0] || 'Varios'}: {formatARS(sortedCategories[0]?.[1] || 0)}
+          <span className="text-xs font-black uppercase text-slate-500 block">🔥 MAYOR GASTO</span>
+          <span className="text-sm sm:text-base font-black text-[#FF5376] mt-1 block truncate" title={highestExpense ? `${highestExpense.title}: ${formatARS(highestExpense.amount)}` : ''}>
+            {highestExpense ? `${highestExpense.title}: ${formatARS(highestExpense.amount)}` : '—'}
           </span>
         </div>
       </div>
-
-      {/* Top Categories Pills */}
-      {sortedCategories.length > 0 && (
-        <div className="pt-2 border-t-[2px] border-black flex flex-wrap gap-2 items-center">
-          <span className="text-xs font-black uppercase text-slate-600 mr-1">TOP GASTOS:</span>
-          {sortedCategories.map(([cat, val], idx) => {
-            const colors = ['bg-[#FFE500]', 'bg-[#00E5FF]', 'bg-[#22C55E]', 'bg-[#D4B2FF]'];
-            return (
-              <div
-                key={cat}
-                className={`px-3 py-1 border-[2px] border-black rounded-lg text-xs sm:text-sm font-black shadow-[1.5px_1.5px_0px_#000] ${colors[idx % colors.length]}`}
-              >
-                {cat}: {formatARS(val)}
-              </div>
-            );
-          })}
-        </div>
-      )}
     </div>
   );
 }
