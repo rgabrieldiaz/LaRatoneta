@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getAdminFirestore } from '@/lib/firebaseAdmin';
-import { inferCategoryAndMethod, parseRawKeepText } from '@/lib/keepParser';
+import { inferCategoryAndMethod, parseLocalizedAmount, parseRawKeepText } from '@/lib/keepParser';
 import { fetchDolarMepRate } from '@/lib/dolarApi';
 import { checkRateLimit } from '@/lib/rateLimit';
 import { Expense, PaymentMethod } from '@/lib/types';
@@ -14,30 +14,10 @@ function getClientIp(request: Request): string {
 const LEDGER_ID = 'primary';
 
 function parseAmountValue(raw: unknown): number {
-  if (typeof raw === 'number') return raw;
+  if (typeof raw === 'number') return Math.round(raw);
   if (typeof raw !== 'string') return 0;
 
-  let cleaned = raw.replace(/[^\d.,-]/g, '').trim();
-  if (!cleaned) return 0;
-
-  // Handle Argentine format "23.200,50" vs US/Apple Pay format "23200.50" or "23,200.50"
-  const lastComma = cleaned.lastIndexOf(',');
-  const lastDot = cleaned.lastIndexOf('.');
-
-  if (lastComma > lastDot) {
-    // Comma is decimal separator (e.g. "23.200,50")
-    cleaned = cleaned.replace(/\./g, '').replace(',', '.');
-  } else if (lastDot > lastComma) {
-    // Dot could be decimal (e.g. "23200.50") or thousands (e.g. "23.200")
-    const afterDot = cleaned.slice(lastDot + 1);
-    if (afterDot.length === 3 && lastComma === -1) {
-      cleaned = cleaned.replace(/\./g, '');
-    } else {
-      cleaned = cleaned.replace(/,/g, '');
-    }
-  }
-
-  const parsed = parseFloat(cleaned);
+  const parsed = parseLocalizedAmount(raw, false);
   return isNaN(parsed) ? 0 : Math.round(parsed);
 }
 

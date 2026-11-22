@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { parseRawKeepText } from '../lib/keepParser';
+import React, { useState, useEffect, useRef } from 'react';
+import { parseLocalizedAmount, parseRawKeepText } from '../lib/keepParser';
 import { fetchDolarMepRate, FALLBACK_DOLAR_MEP } from '../lib/dolarApi';
 import { Category, Expense, MerchantRulesMap, PaymentMethod } from '../lib/types';
 import { Zap, Mic, Plus, ClipboardList, SlidersHorizontal } from 'lucide-react';
@@ -33,7 +33,11 @@ export function QuickInput({ onAddExpense, onOpenBatchModal, merchantRules }: Qu
   const [mode, setMode] = useState<'QUICK' | 'MANUAL'>('QUICK');
   const [inputVal, setInputVal] = useState('');
   const [isListening, setIsListening] = useState(false);
+  const [voiceHint, setVoiceHint] = useState<string | null>(null);
   const [mepRate, setMepRate] = useState<number>(FALLBACK_DOLAR_MEP);
+  const recognitionRef = useRef<any>(null);
+  const voiceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const quickInputRef = useRef<HTMLInputElement | null>(null);
 
   // Manual mode states
   const [manualTitle, setManualTitle] = useState('');
@@ -46,7 +50,23 @@ export function QuickInput({ onAddExpense, onOpenBatchModal, merchantRules }: Qu
 
   useEffect(() => {
     fetchDolarMepRate().then((rate) => setMepRate(rate));
+    return () => {
+      if (voiceTimeoutRef.current) clearTimeout(voiceTimeoutRef.current);
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.abort();
+        } catch {
+          // ignore cleanup errors
+        }
+      }
+    };
   }, []);
+
+  useEffect(() => {
+    if (!voiceHint) return;
+    const t = setTimeout(() => setVoiceHint(null), 6000);
+    return () => clearTimeout(t);
+  }, [voiceHint]);
 
   const handleQuickSubmit = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -63,7 +83,7 @@ export function QuickInput({ onAddExpense, onOpenBatchModal, merchantRules }: Qu
 
   const handleManualSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const numericAmount = parseFloat(manualAmount.replace(',', '.'));
+    const numericAmount = parseLocalizedAmount(manualAmount, manualCurrency === 'USD');
     if (!manualTitle.trim() || isNaN(numericAmount) || numericAmount <= 0) {
       alert('Completá el concepto y un monto válido.');
       return;
@@ -102,33 +122,99 @@ export function QuickInput({ onAddExpense, onOpenBatchModal, merchantRules }: Qu
     setInputVal(`${presetName} `);
   };
 
+  const stopVoiceRecognition = () => {
+    if (voiceTimeoutRef.current) {
+      clearTimeout(voiceTimeoutRef.current);
+      voiceTimeoutRef.current = null;
+    }
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.abort();
+      } catch {
+        // ignore abort errors
+      }
+      recognitionRef.current = null;
+    }
+    setIsListening(false);
+  };
+
   const handleVoiceToggle = () => {
+    if (isListening) {
+      stopVoiceRecognition();
+      return;
+    }
+
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    const isStandalone =
+      (window.navigator as any).standalone === true ||
+      window.matchMedia('(display-mode: standalone)').matches;
+
+    if (isIOS && isStandalone) {
+      quickInputRef.current?.focus();
+      setVoiceHint('En iPhone (app), tocá el micrófono 🎙️ abajo a la derecha del teclado para dictar.');
+      return;
+    }
+
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
-      alert('Tu navegador no soporta dictado por voz. Podés escribir directo (ej: "chino 2500 efectivo").');
+      quickInputRef.current?.focus();
+      setVoiceHint('Usá el micrófono 🎙️ del teclado de tu celular para dictar (ej: "chino 2500 efectivo").');
       return;
     }
 
-    if (isListening) {
-      setIsListening(false);
-      return;
-    }
-
+    setVoiceHint(null);
     const recognition = new SpeechRecognition();
     recognition.lang = 'es-AR';
     recognition.continuous = false;
     recognition.interimResults = false;
+    recognitionRef.current = recognition;
 
-    recognition.onstart = () => setIsListening(true);
-    recognition.onend = () => setIsListening(false);
-    recognition.onerror = () => setIsListening(false);
-
-    recognition.onresult = (event: any) => {
-      const transcript = event.results[0][0].transcript;
-      setInputVal(transcript);
+    const clearSafetyTimer = () => {
+      if (voiceTimeoutRef.current) {
+        clearTimeout(voiceTimeoutRef.current);
+        voiceTimeoutRef.current = null;
+      }
     };
 
-    recognition.start();
+    recognition.onstart = () => setIsListening(true);
+    recognition.onend = () => {
+      clearSafetyTimer();
+      recognitionRef.current = null;
+      setIsListening(false);
+    };
+    recognition.onerror = (event: any) => {
+      clearSafetyTimer();
+      recognitionRef.current = null;
+      setIsListening(false);
+      if (event?.error === 'not-allowed' || event?.error === 'service-not-allowed') {
+        quickInputRef.current?.focus();
+        setVoiceHint('El navegador bloqueó el micrófono. Usá el micrófono 🎙️ del teclado para dictar.');
+      } else if (event?.error !== 'aborted' && event?.error !== 'no-speech') {
+        setVoiceHint('No se pudo escuchar. Probá de nuevo o usá el micrófono 🎙️ del teclado.');
+      }
+    };
+
+    recognition.onresult = (event: any) => {
+      const transcript = event.results?.[0]?.[0]?.transcript;
+      if (transcript) {
+        setInputVal(transcript);
+      }
+    };
+
+    try {
+      setIsListening(true);
+      recognition.start();
+      // Safety timeout so the mic button never gets stuck pulsing on iOS Safari
+      voiceTimeoutRef.current = setTimeout(() => {
+        stopVoiceRecognition();
+        quickInputRef.current?.focus();
+        setVoiceHint('No detectó voz. En iPhone podés usar el micrófono 🎙️ del teclado.');
+      }, 10000);
+    } catch {
+      stopVoiceRecognition();
+      quickInputRef.current?.focus();
+      setVoiceHint('No se pudo activar el micrófono. Usá el micrófono 🎙️ del teclado.');
+    }
   };
 
   return (
@@ -182,6 +268,7 @@ export function QuickInput({ onAddExpense, onOpenBatchModal, merchantRules }: Qu
           <form onSubmit={handleQuickSubmit} className="flex flex-col sm:flex-row items-stretch gap-2.5">
             <div className="relative flex-1">
               <input
+                ref={quickInputRef}
                 type="text"
                 value={inputVal}
                 onChange={(e) => setInputVal(e.target.value)}
@@ -211,6 +298,12 @@ export function QuickInput({ onAddExpense, onOpenBatchModal, merchantRules }: Qu
               </button>
             </div>
           </form>
+
+          {voiceHint && (
+            <div className="px-3 py-2 bg-[#FFE500] border-[2px] border-black rounded-lg text-xs font-black text-black shadow-[2px_2px_0px_#000]">
+              {voiceHint}
+            </div>
+          )}
 
           {/* Quick Presets */}
           <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar pt-0.5">

@@ -97,6 +97,49 @@ function cleanSpokenNoise(text: string): { cleaned: string; isUSD: boolean } {
   return { cleaned, isUSD };
 }
 
+/**
+ * Parses a localized amount string handling Argentine ("23.500", "23.500,50")
+ * and US/iOS ("23,500", "23,500.50") formats without misreading thousands as decimals.
+ */
+export function parseLocalizedAmount(raw: string, isUSD = false): number {
+  const cleaned = raw.replace(/[^\d.,]/g, '').trim();
+  if (!cleaned) return NaN;
+
+  const hasComma = cleaned.includes(',');
+  const hasDot = cleaned.includes('.');
+
+  if (hasComma && hasDot) {
+    const lastComma = cleaned.lastIndexOf(',');
+    const lastDot = cleaned.lastIndexOf('.');
+    if (lastComma > lastDot) {
+      return parseFloat(cleaned.replace(/\./g, '').replace(',', '.'));
+    }
+    return parseFloat(cleaned.replace(/,/g, ''));
+  }
+
+  if (hasComma) {
+    if (!isUSD && /^\d{1,3}(?:,\d{3})+$/.test(cleaned)) {
+      return parseFloat(cleaned.replace(/,/g, ''));
+    }
+    if (!isUSD && /^\d+,\d{3}$/.test(cleaned)) {
+      return parseFloat(cleaned.replace(/,/g, ''));
+    }
+    return parseFloat(cleaned.replace(',', '.'));
+  }
+
+  if (hasDot) {
+    if (!isUSD && /^\d{1,3}(?:\.\d{3})+$/.test(cleaned)) {
+      return parseFloat(cleaned.replace(/\./g, ''));
+    }
+    if (!isUSD && /^\d+\.\d{3}$/.test(cleaned)) {
+      return parseFloat(cleaned.replace(/\./g, ''));
+    }
+    return parseFloat(cleaned);
+  }
+
+  return parseFloat(cleaned);
+}
+
 export function parseRawKeepText(
   text: string,
   dolarMepRate: number = FALLBACK_DOLAR_MEP,
@@ -117,15 +160,7 @@ export function parseRawKeepText(
     if (!numMatch) continue;
 
     const rawAmountStr = numMatch[1];
-    let parsedNumber: number;
-    if (isUSD) {
-      // For USD, both "0,99" and "0.99" are decimal separators
-      parsedNumber = parseFloat(rawAmountStr.replace(',', '.'));
-    } else {
-      parsedNumber = rawAmountStr.includes(',')
-        ? parseFloat(rawAmountStr.replace(/\./g, '').replace(',', '.'))
-        : parseFloat(rawAmountStr.replace(/\./g, ''));
-    }
+    const parsedNumber = parseLocalizedAmount(rawAmountStr, isUSD);
 
     if (isNaN(parsedNumber) || parsedNumber <= 0) continue;
 
