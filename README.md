@@ -1,6 +1,12 @@
-# MisGastos 💸 — Control Diario de Gastos en Neo-Brutalismo
+# La Ratoneta 🧀 — Control Diario de Gastos con la Ratita Tierna
+
+<p align="center">
+  <img src="public/ratita.svg" alt="La Ratoneta Mascot" width="130" />
+</p>
 
 Aplicación web diseñada especialmente para registrar y centralizar gastos diarios en Argentina (efectivo, Mercado Pago, MODO, bancos, transporte y servicios) con estética **Neo-Brutalism** (fondo amarillo vibrante, bordes gruesos de alto contraste y sombras duras).
+
+**Repositorio Oficial:** [github.com/rgabrieldiaz/LaRatoneta](https://github.com/rgabrieldiaz/LaRatoneta)
 
 Diseñada e ideada en **Google Stitch** (Proyecto: *MisGastos — Neo-Brutalist Expense Tracker*).
 
