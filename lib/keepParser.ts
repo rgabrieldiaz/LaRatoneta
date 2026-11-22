@@ -1,4 +1,4 @@
-import { Category, Currency, Expense, PaymentMethod } from './types';
+import { Category, Expense, PaymentMethod } from './types';
 
 export function parseRawKeepText(text: string): Expense[] {
   const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
@@ -19,11 +19,12 @@ export function parseRawKeepText(text: string): Expense[] {
         title: title || 'Gasto en Dólares',
         amount: isNaN(amount) ? 0 : amount,
         currency: 'USD',
-        category: 'Tarjetas',
+        category: 'Resúmenes Tarjeta',
         method: 'CREDITO',
         date: todayStr,
         isConfirmed: true,
         source: 'KEEP_BATCH',
+        note: 'Consumo en USD con Tarjeta de Crédito',
       });
       continue;
     }
@@ -37,11 +38,12 @@ export function parseRawKeepText(text: string): Expense[] {
         title: 'Tarjeta Amex',
         amount,
         currency: 'USD',
-        category: 'Tarjetas',
+        category: 'Resúmenes Tarjeta',
         method: 'CREDITO',
         date: todayStr,
         isConfirmed: true,
         source: 'KEEP_BATCH',
+        note: 'Resumen Amex USD',
       });
       continue;
     }
@@ -55,7 +57,7 @@ export function parseRawKeepText(text: string): Expense[] {
 
       if (!isNaN(amount)) {
         const title = rawTitle.charAt(0).toUpperCase() + rawTitle.slice(1);
-        const { category, method } = inferCategoryAndMethod(rawTitle);
+        const { category, method, note } = inferCategoryAndMethod(rawTitle);
 
         expenses.push({
           id: `parsed-${Date.now()}-${i}`,
@@ -67,6 +69,7 @@ export function parseRawKeepText(text: string): Expense[] {
           date: todayStr,
           isConfirmed: true,
           source: 'KEEP_BATCH',
+          ...(note ? { note } : {}),
         });
       }
     }
@@ -75,85 +78,160 @@ export function parseRawKeepText(text: string): Expense[] {
   return expenses;
 }
 
-export function inferCategoryAndMethod(title: string): { category: Category; method: PaymentMethod } {
+export function inferCategoryAndMethod(title: string): {
+  category: Category;
+  method: PaymentMethod;
+  note?: string;
+} {
   const t = title.toLowerCase();
 
-  // Supermercados (Chinos, Coto, Día, Carrefour, etc.)
-  if (t.includes('chino') || t.includes('carrefour') || t.includes('coto') || t.includes('día') || t.includes('dia') || t.includes('supermercado')) {
+  // 1. Supermercados
+  if (
+    t.includes('chino') ||
+    t.includes('carrefour') ||
+    t.includes('coto') ||
+    t.includes('día') ||
+    t.includes('dia') ||
+    t.includes('supermercado')
+  ) {
     const isChino = t.includes('chino');
+    const isRipio = t.includes('coto') || t.includes('carrefour') || t.includes('día') || t.includes('dia');
     return {
       category: 'Supermercados',
-      method: isChino ? 'EFECTIVO' : 'DEBITO',
+      method: isChino ? 'EFECTIVO' : 'CUENTA',
+      note: isRipio ? 'Ripio Prepaga NFC' : undefined,
     };
   }
 
-  // Carnicería, Verduras, Frescos
-  if (t.includes('carniceria') || t.includes('carnicería') || t.includes('verduleria') || t.includes('verdulería') || t.includes('fiambreria') || t.includes('dietetica') || t.includes('dietética')) {
-    const isVerdu = t.includes('verdu');
+  // 2. Frescos & Panadería (Carnicería, Verdulería, Fiambrería, Dietética, Panadería, Pastas)
+  if (
+    t.includes('carniceria') ||
+    t.includes('carnicería') ||
+    t.includes('verduleria') ||
+    t.includes('verdulería') ||
+    t.includes('fiambreria') ||
+    t.includes('fiambrería') ||
+    t.includes('dietetica') ||
+    t.includes('dietética') ||
+    t.includes('panaderia') ||
+    t.includes('panadería') ||
+    t.includes('pastas')
+  ) {
+    const isModoOrCuenta =
+      t.includes('carniceria') ||
+      t.includes('carnicería') ||
+      t.includes('fiambreria') ||
+      t.includes('fiambrería') ||
+      t.includes('dietetica') ||
+      t.includes('dietética') ||
+      t.includes('pastas');
     return {
-      category: 'Carnicería, Verdura & Frescos',
-      method: isVerdu ? 'EFECTIVO' : 'MODO',
+      category: 'Frescos & Panadería',
+      method: isModoOrCuenta ? 'CUENTA' : 'EFECTIVO',
+      note: isModoOrCuenta ? 'MODO / Billetera' : undefined,
     };
   }
 
-  // Panadería & Pastas
-  if (t.includes('panaderia') || t.includes('panadería') || t.includes('pastas')) {
-    return {
-      category: 'Panadería & Pastas',
-      method: 'EFECTIVO',
-    };
-  }
-
-  // Comida & Salidas
-  if (t.includes('comida') || t.includes('pizza') || t.includes('sandwich') || t.includes('sándwich') || t.includes('empanada') || t.includes('kfc') || t.includes('pons') || t.includes('restaurante') || t.includes('cafe') || t.includes('café') || t.includes('bar')) {
+  // 3. Comida & Salidas
+  if (
+    t.includes('comida') ||
+    t.includes('pizza') ||
+    t.includes('sandwich') ||
+    t.includes('sándwich') ||
+    t.includes('empanada') ||
+    t.includes('kfc') ||
+    t.includes('pons') ||
+    t.includes('restaurante') ||
+    t.includes('cafe') ||
+    t.includes('café') ||
+    t.includes('bar')
+  ) {
+    if (t.includes('pons')) {
+      return {
+        category: 'Comida & Salidas',
+        method: 'CREDITO',
+        note: 'Galicia Visa (Apple Pay NFC)',
+      };
+    }
     const isCashFood = t.includes('al peso');
     return {
       category: 'Comida & Salidas',
-      method: isCashFood ? 'EFECTIVO' : 'MERCADO_PAGO',
+      method: isCashFood ? 'EFECTIVO' : 'CUENTA',
+      note: isCashFood ? undefined : 'Mercado Pago / Billetera',
     };
   }
 
-  // Hogar & Servicios
-  if (t.includes('expensa') || t.includes('termo') || t.includes('personal') || t.includes('sindicato') || t.includes('luz') || t.includes('gas') || t.includes('agua') || t.includes('wifi') || t.includes('alquiler')) {
+  // 4. Hogar & Servicios
+  if (
+    t.includes('expensa') ||
+    t.includes('termo') ||
+    t.includes('personal') ||
+    t.includes('sindicato') ||
+    t.includes('luz') ||
+    t.includes('gas') ||
+    t.includes('agua') ||
+    t.includes('wifi') ||
+    t.includes('alquiler')
+  ) {
+    if (t.includes('personal')) {
+      return {
+        category: 'Hogar & Servicios',
+        method: 'CUENTA',
+        note: 'Personal Pay (saldo)',
+      };
+    }
     return {
       category: 'Hogar & Servicios',
-      method: 'TRANSFERENCIA',
+      method: 'CUENTA',
+      note: 'Transferencia bancaria',
     };
   }
 
-  // Transporte
+  // 5. Transporte
   if (t.includes('cabify') || t.includes('uber') || t.includes('taxi') || t.includes('didi')) {
     return {
       category: 'Transporte',
-      method: 'MERCADO_PAGO',
+      method: 'CUENTA',
+      note: 'Mercado Pago / Billetera',
     };
   }
   if (t.includes('sube') || t.includes('colectivo') || t.includes('tren') || t.includes('subte') || t.includes('transporte')) {
     return {
       category: 'Transporte',
       method: 'SUBE',
+      note: 'Carga / Viaje SUBE',
     };
   }
 
-  // Salud & Farmacia
-  if (t.includes('farmacia') || t.includes('hospital') || t.includes('britanico') || t.includes('británico') || t.includes('medico') || t.includes('suplemento') || t.includes('remedio')) {
+  // 6. Salud & Farmacia
+  if (
+    t.includes('farmacia') ||
+    t.includes('hospital') ||
+    t.includes('britanico') ||
+    t.includes('británico') ||
+    t.includes('medico') ||
+    t.includes('suplemento') ||
+    t.includes('remedio')
+  ) {
     return {
       category: 'Salud & Farmacia',
-      method: 'DEBITO',
+      method: 'CUENTA',
+      note: 'Débito / Cuenta',
     };
   }
 
-  // Tarjetas
+  // 7. Resúmenes Tarjeta
   if (t.includes('tarjeta') || t.includes('visa') || t.includes('master') || t.includes('amex')) {
     return {
-      category: 'Tarjetas',
+      category: 'Resúmenes Tarjeta',
       method: 'CREDITO',
+      note: 'Resumen tarjeta de crédito',
     };
   }
 
-  // Default: Varios & Cuidado
+  // 8. Default: Cuidado & Varios
   return {
-    category: 'Varios & Cuidado',
+    category: 'Cuidado & Varios',
     method: 'EFECTIVO',
   };
 }

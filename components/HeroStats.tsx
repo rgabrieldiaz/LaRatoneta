@@ -34,14 +34,20 @@ export function HeroStats({
   const uniqueDays = new Set(expenses.map(e => e.date)).size || 1;
   const dailyAverageARS = Math.round(totalARS / uniqueDays);
 
-  // Cash vs Digital Breakdown
+  // Cash vs Account vs Credit Breakdown
   const cashARS = expenses
     .filter(e => e.currency === 'ARS' && e.method === 'EFECTIVO')
     .reduce((sum, e) => sum + e.amount, 0);
 
-  const digitalARS = totalARS - cashARS;
+  const creditARS = expenses
+    .filter(e => e.currency === 'ARS' && e.method === 'CREDITO')
+    .reduce((sum, e) => sum + e.amount, 0);
+
+  const accountARS = totalARS - cashARS - creditARS;
+
   const cashPct = totalARS > 0 ? Math.round((cashARS / totalARS) * 100) : 0;
-  const digitalPct = totalARS > 0 ? 100 - cashPct : 0;
+  const creditPct = totalARS > 0 ? Math.round((creditARS / totalARS) * 100) : 0;
+  const accountPct = totalARS > 0 ? Math.max(0, 100 - cashPct - creditPct) : 0;
 
   // Category breakdown
   const categoryTotals: Record<string, number> = {};
@@ -151,20 +157,21 @@ export function HeroStats({
         </div>
       </div>
 
-      {/* Cash vs Digital Bar (Critical for Argentine reality) */}
-      <div className="bg-[#F8F8F8] border-[2px] border-black rounded-xl p-3.5 space-y-2 shadow-[2px_2px_0px_#000]">
+      {/* Cash vs Account vs Credit Bar */}
+      <div className="bg-[#F8F8F8] border-[2px] border-black rounded-xl p-3.5 space-y-2.5 shadow-[2px_2px_0px_#000]">
         <div className="flex items-center justify-between text-xs sm:text-sm font-black flex-wrap gap-2">
-          <span className="flex items-center gap-1.5 text-black">
-            <Banknote className="w-5 h-5 text-[#FF5376]" />
+          <span className="flex items-center gap-1 text-black">
             <span>💵 EFECTIVO: {formatARS(cashARS)} ({cashPct}%)</span>
           </span>
-          <span className="flex items-center gap-1.5 text-black">
-            <Smartphone className="w-5 h-5 text-[#22C55E]" />
-            <span>📱 DIGITAL / APPS: {formatARS(digitalARS)} ({digitalPct}%)</span>
+          <span className="flex items-center gap-1 text-black">
+            <span>⚡ EN CUENTA: {formatARS(accountARS)} ({accountPct}%)</span>
+          </span>
+          <span className="flex items-center gap-1 text-[#FF5376]">
+            <span>💳 CRÉDITO: {formatARS(creditARS)} ({creditPct}%)</span>
           </span>
         </div>
 
-        {/* Dual progress bar */}
+        {/* Triple progress bar */}
         <div className="w-full h-3.5 bg-slate-200 border-[2px] border-black rounded-full overflow-hidden flex">
           <div 
             style={{ width: `${cashPct}%` }} 
@@ -172,9 +179,14 @@ export function HeroStats({
             title={`Efectivo: ${cashPct}%`}
           />
           <div 
-            style={{ width: `${digitalPct}%` }} 
-            className="bg-[#00E5FF] h-full" 
-            title={`Digital: ${digitalPct}%`}
+            style={{ width: `${accountPct}%` }} 
+            className="bg-[#22C55E] h-full border-r border-black" 
+            title={`En Cuenta (Débito/Billeteras/Prepagas): ${accountPct}%`}
+          />
+          <div 
+            style={{ width: `${creditPct}%` }} 
+            className="bg-[#FF5376] h-full" 
+            title={`Crédito: ${creditPct}%`}
           />
         </div>
       </div>

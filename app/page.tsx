@@ -267,9 +267,9 @@ export default function Home() {
 
   const handleSimulatePush = async () => {
     const samples = [
-      { title: 'Supermercado Día', amount: 15400, method: 'MERCADO_PAGO' as const, note: 'Notificación de pago QR Mercado Pago' },
-      { title: 'Farmacity', amount: 8900, method: 'MODO' as const, note: 'Notificación push Banco Galicia MODO' },
-      { title: 'Viaje Uber', amount: 4800, method: 'MERCADO_PAGO' as const, note: 'Notificación push Uber' },
+      { title: 'Supermercado Día', amount: 15400, method: 'CUENTA' as const, note: 'Ripio Prepaga NFC' },
+      { title: 'Farmacity', amount: 8900, method: 'CUENTA' as const, note: 'Notificación push Banco Galicia MODO' },
+      { title: 'Viaje Uber', amount: 4800, method: 'CUENTA' as const, note: 'Notificación push Mercado Pago' },
       { title: 'Panadería La Unión', amount: 1800, method: 'EFECTIVO' as const, note: 'Pago detectado en caja' }
     ];
     const picked = samples[Math.floor(Math.random() * samples.length)];

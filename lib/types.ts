@@ -2,23 +2,19 @@ export type Currency = 'ARS' | 'USD';
 
 export type PaymentMethod = 
   | 'EFECTIVO'
-  | 'MERCADO_PAGO'
-  | 'MODO'
-  | 'DEBITO'
-  | 'CREDITO'
-  | 'TRANSFERENCIA'
-  | 'SUBE';
+  | 'CUENTA'      // Plata en cuenta al contado: Débito, Prepagas (Ripio), Billeteras (Personal Pay, MP, MODO cuenta), Transferencias
+  | 'CREDITO'     // Tarjeta de Crédito (Visa, Amex, Apple Pay crédito, MODO crédito)
+  | 'SUBE';       // Recargas SUBE
 
 export type Category = 
   | 'Supermercados'
+  | 'Frescos & Panadería'
   | 'Comida & Salidas'
-  | 'Carnicería, Verdura & Frescos'
-  | 'Panadería & Pastas'
   | 'Hogar & Servicios'
   | 'Transporte'
   | 'Salud & Farmacia'
-  | 'Tarjetas'
-  | 'Varios & Cuidado';
+  | 'Cuidado & Varios'
+  | 'Resúmenes Tarjeta';
 
 export interface Expense {
   id: string;

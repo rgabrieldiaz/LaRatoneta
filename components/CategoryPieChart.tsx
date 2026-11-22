@@ -33,14 +33,13 @@ interface CategorySlice {
 
 const CATEGORY_COLORS: Record<string, string> = {
   'Supermercados': '#FF6B6B', // Coral
+  'Frescos & Panadería': '#2ECC71', // Green
   'Comida & Salidas': '#FF9F43', // Orange
-  'Carnicería, Verdura & Frescos': '#2ECC71', // Green
-  'Panadería & Pastas': '#FDCB6E', // Warm Gold
   'Hogar & Servicios': '#A29BFE', // Purple
   'Transporte': '#54A0FF', // Blue
   'Salud & Farmacia': '#00D2D3', // Teal
-  'Tarjetas': '#FF7675', // Rose/Red
-  'Varios & Cuidado': '#FD79A8', // Pink
+  'Cuidado & Varios': '#FD79A8', // Pink
+  'Resúmenes Tarjeta': '#FF7675', // Rose/Red
 };
 
 export function CategoryPieChart({ expenses, selectedMonthLabel }: CategoryPieChartProps) {
@@ -171,7 +170,7 @@ export function CategoryPieChart({ expenses, selectedMonthLabel }: CategoryPieCh
       case 'Transporte': return <Car className="w-3.5 h-3.5" />;
       case 'Hogar & Servicios': return <Home className="w-3.5 h-3.5" />;
       case 'Salud & Farmacia': return <HeartPulse className="w-3.5 h-3.5" />;
-      case 'Tarjetas': return <CreditCard className="w-3.5 h-3.5" />;
+      case 'Resúmenes Tarjeta': return <CreditCard className="w-3.5 h-3.5" />;
       default: return <ShoppingBag className="w-3.5 h-3.5" />;
     }
   };

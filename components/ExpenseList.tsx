@@ -34,11 +34,19 @@ export function ExpenseList({ expenses, onDeleteExpense }: ExpenseListProps) {
       if (filterCurrency !== 'ALL' && e.currency !== filterCurrency) {
         return false;
       }
-      // Category filter
+      // Category / Method filter
       if (filterCategory !== 'ALL') {
         if (filterCategory === 'EFECTIVO' && e.method !== 'EFECTIVO') return false;
-        if (filterCategory === 'DIGITAL' && e.method === 'EFECTIVO') return false;
-        if (filterCategory !== 'EFECTIVO' && filterCategory !== 'DIGITAL' && e.category !== filterCategory) return false;
+        if (filterCategory === 'CUENTA' && e.method !== 'CUENTA') return false;
+        if (filterCategory === 'CREDITO' && e.method !== 'CREDITO') return false;
+        if (
+          filterCategory !== 'EFECTIVO' &&
+          filterCategory !== 'CUENTA' &&
+          filterCategory !== 'CREDITO' &&
+          e.category !== filterCategory
+        ) {
+          return false;
+        }
       }
       // Search query
       if (searchQuery.trim()) {
@@ -46,8 +54,9 @@ export function ExpenseList({ expenses, onDeleteExpense }: ExpenseListProps) {
         const matchTitle = e.title.toLowerCase().includes(q);
         const matchCat = e.category.toLowerCase().includes(q);
         const matchMethod = e.method.toLowerCase().includes(q);
+        const matchNote = e.note ? e.note.toLowerCase().includes(q) : false;
         const matchAmount = e.amount.toString().includes(q);
-        if (!matchTitle && !matchCat && !matchMethod && !matchAmount) return false;
+        if (!matchTitle && !matchCat && !matchMethod && !matchNote && !matchAmount) return false;
       }
       return true;
     });
@@ -66,14 +75,14 @@ export function ExpenseList({ expenses, onDeleteExpense }: ExpenseListProps) {
         return <Home className="w-5 h-5 text-black" />;
       case 'Salud & Farmacia':
         return <HeartPulse className="w-5 h-5 text-black" />;
-      case 'Tarjetas':
+      case 'Resúmenes Tarjeta':
         return <CreditCard className="w-5 h-5 text-black" />;
       default:
         return <ShoppingBag className="w-5 h-5 text-black" />;
     }
   };
 
-  const getMethodBadge = (method: PaymentMethod, currency: string) => {
+  const getMethodBadge = (method: PaymentMethod | string, currency: string) => {
     if (currency === 'USD') {
       return (
         <span className="px-2 py-0.5 bg-[#00E5FF] text-black border-[1.5px] border-black text-xs font-black rounded uppercase shadow-[1px_1px_0px_#000]">
@@ -88,22 +97,14 @@ export function ExpenseList({ expenses, onDeleteExpense }: ExpenseListProps) {
             💵 EFECTIVO
           </span>
         );
+      case 'CUENTA':
       case 'MERCADO_PAGO':
-        return (
-          <span className="px-2 py-0.5 bg-[#00E5FF] text-black border-[1.5px] border-black text-xs font-black rounded uppercase shadow-[1px_1px_0px_#000]">
-            📱 MP QR
-          </span>
-        );
       case 'MODO':
+      case 'DEBITO':
+      case 'TRANSFERENCIA':
         return (
           <span className="px-2 py-0.5 bg-[#22C55E] text-black border-[1.5px] border-black text-xs font-black rounded uppercase shadow-[1px_1px_0px_#000]">
-            ⚡ MODO
-          </span>
-        );
-      case 'DEBITO':
-        return (
-          <span className="px-2 py-0.5 bg-slate-200 text-black border-[1.5px] border-black text-xs font-black rounded uppercase shadow-[1px_1px_0px_#000]">
-            💳 DÉBITO
+            ⚡ EN CUENTA
           </span>
         );
       case 'CREDITO':
@@ -112,16 +113,16 @@ export function ExpenseList({ expenses, onDeleteExpense }: ExpenseListProps) {
             💳 CRÉDITO
           </span>
         );
-      case 'TRANSFERENCIA':
-        return (
-          <span className="px-2 py-0.5 bg-[#D4B2FF] text-black border-[1.5px] border-black text-xs font-black rounded uppercase shadow-[1px_1px_0px_#000]">
-            🏦 TRANSF
-          </span>
-        );
       case 'SUBE':
         return (
-          <span className="px-2 py-0.5 bg-[#54A0FF] text-black border-[1.5px] border-black text-xs font-black rounded uppercase shadow-[1px_1px_0px_#000]">
+          <span className="px-2 py-0.5 bg-[#54A0FF] text-white border-[1.5px] border-black text-xs font-black rounded uppercase shadow-[1px_1px_0px_#000]">
             🚌 SUBE
+          </span>
+        );
+      default:
+        return (
+          <span className="px-2 py-0.5 bg-slate-200 text-black border-[1.5px] border-black text-xs font-black rounded uppercase shadow-[1px_1px_0px_#000]">
+            {method}
           </span>
         );
     }
@@ -180,15 +181,17 @@ export function ExpenseList({ expenses, onDeleteExpense }: ExpenseListProps) {
         <div className="h-6 w-[2px] bg-black/40 mx-1 shrink-0" />
 
         {[
-          { label: '💵 Solo Efectivo', val: 'EFECTIVO' },
-          { label: '📱 Solo Digital', val: 'DIGITAL' },
+          { label: '💵 Efectivo', val: 'EFECTIVO' },
+          { label: '⚡ En Cuenta', val: 'CUENTA' },
+          { label: '💳 Crédito', val: 'CREDITO' },
           { label: '🛒 Supermercados', val: 'Supermercados' },
+          { label: '🥩 Frescos & Panadería', val: 'Frescos & Panadería' },
           { label: '🍕 Comida & Salidas', val: 'Comida & Salidas' },
-          { label: '🥩 Carnicería & Frescos', val: 'Carnicería, Verdura & Frescos' },
-          { label: '🥐 Panadería & Pastas', val: 'Panadería & Pastas' },
+          { label: '🏠 Hogar & Servicios', val: 'Hogar & Servicios' },
           { label: '🚗 Transporte', val: 'Transporte' },
-          { label: '🏛️ Hogar & Servicios', val: 'Hogar & Servicios' },
           { label: '🩺 Salud & Farmacia', val: 'Salud & Farmacia' },
+          { label: '🛍️ Cuidado & Varios', val: 'Cuidado & Varios' },
+          { label: '💳 Resúmenes Tarjeta', val: 'Resúmenes Tarjeta' },
         ].map((c) => (
           <button
             key={c.val}
