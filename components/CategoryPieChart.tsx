@@ -285,7 +285,7 @@ export function CategoryPieChart({ expenses, selectedMonthLabel }: CategoryPieCh
 
           {/* Category Breakdown & Legend */}
           <div className="md:col-span-7 space-y-2">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[300px] overflow-y-auto pr-1">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-[340px] overflow-y-auto p-1.5">
               {slices.map((slice) => {
                 const isHovered = hoveredCategory === slice.category;
                 return (
@@ -295,7 +295,7 @@ export function CategoryPieChart({ expenses, selectedMonthLabel }: CategoryPieCh
                     onMouseLeave={() => setHoveredCategory(null)}
                     className={`p-2.5 rounded-lg border-[2px] transition-all cursor-pointer ${
                       isHovered
-                        ? 'border-black bg-[#FFF9D2] shadow-[3px_3px_0px_#000] scale-[1.02]'
+                        ? 'border-black bg-[#FFF9D2] shadow-[4px_4px_0px_#000] -translate-y-0.5'
                         : 'border-black/30 bg-slate-50 hover:border-black hover:bg-white'
                     }`}
                   >
