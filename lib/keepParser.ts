@@ -7,8 +7,8 @@ interface MethodOverrideResult {
 }
 
 /**
- * Extracts explicit payment method phrases (e.g. "pagado en efectivo", "credito", "ripio", "mp")
- * from anywhere in the input string so the title and amount stay clean.
+ * Extracts explicit payment method phrases from anywhere in the input string.
+ * Handles natural spoken/typed phrases like "con tarjeta de crédito", "pagado en efectivo", etc.
  */
 function extractExplicitMethod(raw: string): MethodOverrideResult {
   let text = raw;
@@ -16,20 +16,19 @@ function extractExplicitMethod(raw: string): MethodOverrideResult {
   let explicitNote: string | undefined;
 
   const patterns: { regex: RegExp; method: PaymentMethod; note?: string }[] = [
-    { regex: /\b(?:pagado\s+en\s+|en\s+|con\s+)?(efectivo|efvo|cash)\b/i, method: 'EFECTIVO' },
-    { regex: /\b(?:pagado\s+con\s+|con\s+|en\s+)?(apple\s*pay)\b/i, method: 'CREDITO', note: 'Apple Pay Crédito' },
-    { regex: /\b(?:pagado\s+con\s+|con\s+|en\s+)?(cr[eé]dito|tarjeta\s+de\s+cr[eé]dito|visa|amex|mastercard)\b/i, method: 'CREDITO' },
-    { regex: /\b(?:pagado\s+con\s+|con\s+|en\s+)?(ripio)\b/i, method: 'CUENTA', note: 'Ripio Prepaga NFC' },
-    { regex: /\b(?:pagado\s+con\s+|con\s+|en\s+)?(personal\s*pay)\b/i, method: 'CUENTA', note: 'Personal Pay' },
-    { regex: /\b(?:pagado\s+con\s+|con\s+|en\s+)?(mercado\s*pago|mp)\b/i, method: 'CUENTA', note: 'Mercado Pago' },
-    { regex: /\b(?:pagado\s+con\s+|con\s+|en\s+)?(modo)\b/i, method: 'CUENTA', note: 'MODO' },
-    { regex: /\b(?:pagado\s+con\s+|con\s+|en\s+)?(d[eé]bito|cuenta|transferencia|transf)\b/i, method: 'CUENTA' },
-    { regex: /\b(?:pagado\s+con\s+|con\s+|en\s+)?(sube)\b/i, method: 'SUBE' },
+    { regex: /\b(?:pagad[oa]\s+|pagu[eé]\s+|con\s+|en\s+)?(?:tarjeta\s+de\s+cr[eé]dito|cr[eé]dito|visa|amex|mastercard)\b/i, method: 'CREDITO' },
+    { regex: /\b(?:pagad[oa]\s+|pagu[eé]\s+|con\s+|en\s+)?(apple\s*pay)\b/i, method: 'CREDITO', note: 'Apple Pay Crédito' },
+    { regex: /\b(?:pagad[oa]\s+|pagu[eé]\s+|con\s+|en\s+)?(efectivo|efvo|cash)\b/i, method: 'EFECTIVO' },
+    { regex: /\b(?:pagad[oa]\s+|pagu[eé]\s+|con\s+|en\s+)?(ripio)\b/i, method: 'CUENTA', note: 'Ripio Prepaga NFC' },
+    { regex: /\b(?:pagad[oa]\s+|pagu[eé]\s+|con\s+|en\s+)?(personal\s*pay)\b/i, method: 'CUENTA', note: 'Personal Pay' },
+    { regex: /\b(?:pagad[oa]\s+|pagu[eé]\s+|con\s+|en\s+)?(mercado\s*pago|mp)\b/i, method: 'CUENTA', note: 'Mercado Pago' },
+    { regex: /\b(?:pagad[oa]\s+|pagu[eé]\s+|con\s+|en\s+)?(modo)\b/i, method: 'CUENTA', note: 'MODO' },
+    { regex: /\b(?:pagad[oa]\s+|pagu[eé]\s+|con\s+|en\s+|por\s+)?(?:tarjeta\s+de\s+d[eé]bito|d[eé]bito|cuenta|transferencia|transf)\b/i, method: 'CUENTA' },
+    { regex: /\b(?:pagad[oa]\s+|pagu[eé]\s+|con\s+|en\s+)?(sube)\b/i, method: 'SUBE' },
   ];
 
   for (const p of patterns) {
     if (p.regex.test(text)) {
-      // Only strip if it's not the ONLY word before the amount (e.g. "Sube 900" should keep "Sube" as title!)
       const without = text.replace(p.regex, ' ').replace(/\s+/g, ' ').trim();
       const hasRemainingWords = /[a-zA-ZñÑáéíóúÁÉÍÓÚ]{2,}/.test(without.replace(/[\d\.,]/g, ''));
       explicitMethod = p.method;
@@ -44,6 +43,20 @@ function extractExplicitMethod(raw: string): MethodOverrideResult {
   return { cleanedText: text.trim(), explicitMethod, explicitNote };
 }
 
+/**
+ * Strips spoken filler words and currency terms ("pesos", "$", "pagué en el", etc.)
+ */
+function cleanSpokenNoise(text: string): string {
+  return text
+    .replace(/\$/g, ' ')
+    .replace(/\b(pesos?|ars)\b/gi, ' ')
+    .replace(/^\s*(?:pagu[eé]|pag[oó]|gast[eé]|compr[eé]|fui)\s+(?:en\s+el\s+|en\s+la\s+|en\s+|al\s+|a\s+la\s+|a\s+)?/i, '')
+    .replace(/^\s*(?:en\s+el|en\s+la|al|a\s+la)\s+/i, '')
+    .replace(/\s+(?:con|en)\s*$/i, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 export function parseRawKeepText(text: string): Expense[] {
   const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
   const expenses: Expense[] = [];
@@ -53,47 +66,46 @@ export function parseRawKeepText(text: string): Expense[] {
   for (let i = 0; i < lines.length; i++) {
     const rawLine = lines[i];
     const { cleanedText, explicitMethod, explicitNote } = extractExplicitMethod(rawLine);
+    const noNoise = cleanSpokenNoise(cleanedText);
 
-    // Match title and amount: supports "Chino 19510" or "19510 Chino"
-    const endAmountMatch = cleanedText.match(/^(.*?)\s+([\d\.,]+)$/);
-    const startAmountMatch = !endAmountMatch ? cleanedText.match(/^([\d\.,]+)\s+(.*)$/) : null;
+    // Find the amount anywhere in the sentence (e.g. "20000", "20.000", "14520,50")
+    const numMatch = noNoise.match(/(?:^|\s)([\d]+(?:[\.,]\d{3})*(?:,\d{1,2})?|\d+(?:[.,]\d+)?)(?=\s|$)/);
+    if (!numMatch) continue;
 
-    let rawTitle = '';
-    let rawAmountStr = '';
+    const rawAmountStr = numMatch[1];
+    // Remove thousands dots and convert comma decimal to dot
+    const normalizedAmount = rawAmountStr.includes(',')
+      ? rawAmountStr.replace(/\./g, '').replace(',', '.')
+      : rawAmountStr.replace(/\./g, '');
+    const amount = parseFloat(normalizedAmount);
 
-    if (endAmountMatch) {
-      rawTitle = endAmountMatch[1].trim();
-      rawAmountStr = endAmountMatch[2];
-    } else if (startAmountMatch) {
-      rawAmountStr = startAmountMatch[1];
-      rawTitle = startAmountMatch[2].trim();
-    }
+    if (isNaN(amount) || amount <= 0) continue;
 
-    if (rawTitle && rawAmountStr) {
-      const normalizedAmount = rawAmountStr.replace(/\./g, '').replace(',', '.');
-      const amount = parseFloat(normalizedAmount);
+    const rawTitle = noNoise
+      .replace(numMatch[0], ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
 
-      if (!isNaN(amount) && amount > 0) {
-        const title = rawTitle.charAt(0).toUpperCase() + rawTitle.slice(1);
-        const inferred = inferCategoryAndMethod(rawTitle);
+    if (!rawTitle) continue;
+
+    const title = rawTitle.charAt(0).toUpperCase() + rawTitle.slice(1);
+    const inferred = inferCategoryAndMethod(rawTitle);
 
         const finalMethod = explicitMethod ?? inferred.method;
-        const finalNote = explicitNote ?? inferred.note;
+        const finalNote = explicitMethod ? explicitNote : inferred.note;
 
-        expenses.push({
-          id: `parsed-${Date.now()}-${i}`,
-          title,
-          amount,
-          currency: 'ARS',
-          category: inferred.category,
-          method: finalMethod,
-          date: todayStr,
-          isConfirmed: true,
-          source: 'KEEP_BATCH',
-          ...(finalNote ? { note: finalNote } : {}),
-        });
-      }
-    }
+    expenses.push({
+      id: `parsed-${Date.now()}-${i}`,
+      title,
+      amount,
+      currency: 'ARS',
+      category: inferred.category,
+      method: finalMethod,
+      date: todayStr,
+      isConfirmed: true,
+      source: 'KEEP_BATCH',
+      ...(finalNote ? { note: finalNote } : {}),
+    });
   }
 
   return expenses;
@@ -113,7 +125,12 @@ export function inferCategoryAndMethod(title: string): {
     t.includes('coto') ||
     t.includes('día') ||
     t.includes('dia') ||
-    t.includes('supermercado')
+    t.includes('jumbo') ||
+    t.includes('disco') ||
+    t.includes('vea') ||
+    t.includes('supermercado') ||
+    t.includes('almacen') ||
+    t.includes('almacén')
   ) {
     const isChino = t.includes('chino');
     const isRipio = t.includes('coto') || t.includes('carrefour') || t.includes('día') || t.includes('dia');
@@ -136,7 +153,9 @@ export function inferCategoryAndMethod(title: string): {
     t.includes('dietética') ||
     t.includes('panaderia') ||
     t.includes('panadería') ||
-    t.includes('pastas')
+    t.includes('pastas') ||
+    t.includes('polleria') ||
+    t.includes('pescaderia')
   ) {
     const isModoOrCuenta =
       t.includes('carniceria') ||
@@ -162,10 +181,21 @@ export function inferCategoryAndMethod(title: string): {
     t.includes('empanada') ||
     t.includes('kfc') ||
     t.includes('pons') ||
+    t.includes('mcdonald') ||
+    t.includes('mc donald') ||
+    t.includes('burger') ||
+    t.includes('mostaza') ||
+    t.includes('wendy') ||
+    t.includes('starbucks') ||
+    t.includes('helad') ||
+    t.includes('grido') ||
+    t.includes('freddo') ||
     t.includes('restaurante') ||
     t.includes('cafe') ||
     t.includes('café') ||
-    t.includes('bar')
+    t.includes('bar') ||
+    t.includes('rappi') ||
+    t.includes('pedidosya')
   ) {
     if (t.includes('pons')) {
       return {
@@ -189,9 +219,15 @@ export function inferCategoryAndMethod(title: string): {
     t.includes('personal') ||
     t.includes('sindicato') ||
     t.includes('luz') ||
+    t.includes('edesur') ||
+    t.includes('edenor') ||
     t.includes('gas') ||
+    t.includes('metrogas') ||
     t.includes('agua') ||
+    t.includes('aysa') ||
+    t.includes('abl') ||
     t.includes('wifi') ||
+    t.includes('internet') ||
     t.includes('alquiler')
   ) {
     if (t.includes('personal')) {
@@ -209,7 +245,7 @@ export function inferCategoryAndMethod(title: string): {
   }
 
   // 5. Transporte
-  if (t.includes('cabify') || t.includes('uber') || t.includes('taxi') || t.includes('didi')) {
+  if (t.includes('cabify') || t.includes('uber') || t.includes('taxi') || t.includes('didi') || t.includes('nafta') || t.includes('ypf') || t.includes('shell')) {
     return {
       category: 'Transporte',
       method: 'CUENTA',
@@ -227,10 +263,12 @@ export function inferCategoryAndMethod(title: string): {
   // 6. Salud & Farmacia
   if (
     t.includes('farmacia') ||
+    t.includes('farmacity') ||
     t.includes('hospital') ||
     t.includes('britanico') ||
     t.includes('británico') ||
     t.includes('medico') ||
+    t.includes('médico') ||
     t.includes('suplemento') ||
     t.includes('remedio')
   ) {
