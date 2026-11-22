@@ -59,6 +59,16 @@ if (typeof window !== 'undefined' && isFirebaseConfigured) {
 
 export { auth, db };
 
+// Direct redirect method (bypasses browser popup blockers 100%)
+export async function loginWithGoogleRedirect(): Promise<void> {
+  if (!auth) {
+    throw new Error('Firebase no está configurado aún. Agregá las variables de entorno en Vercel.');
+  }
+  const provider = new GoogleAuthProvider();
+  provider.setCustomParameters({ prompt: 'select_account' });
+  await signInWithRedirect(auth, provider);
+}
+
 // Google Auth Provider with intelligent fallback for mobile/popup blockers
 export async function loginWithGoogle(): Promise<User | null> {
   if (!auth) {

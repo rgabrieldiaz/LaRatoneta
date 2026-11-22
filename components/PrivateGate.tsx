@@ -2,26 +2,30 @@
 
 import React from 'react';
 import { User } from 'firebase/auth';
-import { ShieldCheck, Lock, LogOut, ArrowRight } from 'lucide-react';
+import { ShieldCheck, Lock, LogOut, ArrowRight, ExternalLink, RefreshCw } from 'lucide-react';
 
 interface PrivateGateProps {
   user: User | null;
   authorizedEmails: string[];
   onLogin: () => void;
+  onLoginRedirect: () => void;
   onLogout: () => void;
   isConfigured: boolean;
+  errorMessage?: string | null;
 }
 
 export function PrivateGate({
   user,
   authorizedEmails,
   onLogin,
+  onLoginRedirect,
   onLogout,
+  errorMessage,
 }: PrivateGateProps) {
   const isWrongUser = Boolean(
     user && 
     user.email && 
-    !authorizedEmails.map(e => e.toLowerCase()).includes(user.email.toLowerCase())
+    !authorizedEmails.map(e => e.trim().toLowerCase()).includes(user.email.trim().toLowerCase())
   );
 
   return (
@@ -55,7 +59,7 @@ export function PrivateGate({
           </p>
         </div>
 
-        {/* Privacy Explanation (100% anonymous, no PII leaked) */}
+        {/* Privacy Explanation */}
         <div className="bg-[#FFF9D2] border-[2px] border-black p-3.5 rounded-lg text-left space-y-2">
           <div className="flex items-center gap-1.5 font-black text-xs text-black">
             <ShieldCheck className="w-4 h-4 text-[#22C55E]" />
@@ -66,7 +70,24 @@ export function PrivateGate({
           </p>
         </div>
 
-        {/* Unauthorized user state (Never leaks the authorized emails!) */}
+        {/* Optional Error Display Banner */}
+        {errorMessage && (
+          <div className="bg-[#FF5376]/10 border-[2px] border-[#FF5376] p-3 rounded-lg text-left space-y-1">
+            <p className="text-xs font-black text-[#FF5376] uppercase">
+              ⚠️ Nota de inicio de sesión:
+            </p>
+            <p className="text-xs text-slate-800 break-words font-mono">
+              {errorMessage}
+            </p>
+            {errorMessage.includes('popup') && (
+              <p className="text-[11px] text-slate-600 font-bold mt-1">
+                💡 Consejo: Si tu navegador bloqueó la ventana emergente, probá el botón de <strong>"Ingresar por Redirección Directa"</strong> abajo.
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Unauthorized user state */}
         {isWrongUser ? (
           <div className="bg-[#FF5376]/10 border-[2px] border-[#FF5376] p-4 rounded-lg space-y-3 text-left">
             <p className="text-xs font-black text-[#FF5376] uppercase flex items-center gap-1.5">
@@ -84,8 +105,9 @@ export function PrivateGate({
             </button>
           </div>
         ) : (
-          /* Normal Login state (Zero email exposure) */
+          /* Normal Login state with 2 options */
           <div className="space-y-3">
+            {/* Primary Popup Login */}
             <button
               onClick={onLogin}
               className="brutal-btn w-full bg-[#22C55E] text-black py-4 px-5 rounded-xl font-black text-sm uppercase flex items-center justify-center gap-3 hover:bg-[#1eb353] transition-transform active:scale-95 shadow-[4px_4px_0px_#000]"
@@ -110,6 +132,15 @@ export function PrivateGate({
               </svg>
               <span>Continuar con Google</span>
               <ArrowRight className="w-4 h-4 ml-auto" />
+            </button>
+
+            {/* Alternative Direct Redirect Login (bypasses popups 100%) */}
+            <button
+              onClick={onLoginRedirect}
+              className="w-full py-2.5 px-4 bg-slate-100 hover:bg-slate-200 border-[2px] border-black rounded-lg text-xs font-black text-black flex items-center justify-center gap-2 shadow-[2px_2px_0px_#000] transition-colors"
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+              <span>O ingresar por Redirección Directa (Sin popups)</span>
             </button>
 
             <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">

@@ -21,6 +21,7 @@ import {
 } from '../lib/dateUtils';
 import { 
   loginWithGoogle, 
+  loginWithGoogleRedirect,
   logoutUser, 
   onUserAuthStateChanged, 
   isFirebaseConfigured,
@@ -39,6 +40,7 @@ import {
 export default function Home() {
   const [user, setUser] = useState<User | null>(null);
   const [isAuthChecking, setIsAuthChecking] = useState(true);
+  const [loginError, setLoginError] = useState<string | null>(null);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [pendingExpenses, setPendingExpenses] = useState<Expense[]>([]);
   const [isBatchModalOpen, setIsBatchModalOpen] = useState(false);
@@ -133,9 +135,21 @@ export default function Home() {
   // Handlers for Authentication
   const handleLogin = async () => {
     try {
+      setLoginError(null);
       await loginWithGoogle();
     } catch (error: any) {
-      alert('Error al iniciar sesión con Google: ' + (error.message || error));
+      console.error('Error loginWithGoogle:', error);
+      setLoginError(error?.message || String(error));
+    }
+  };
+
+  const handleLoginRedirect = async () => {
+    try {
+      setLoginError(null);
+      await loginWithGoogleRedirect();
+    } catch (error: any) {
+      console.error('Error loginWithGoogleRedirect:', error);
+      setLoginError(error?.message || String(error));
     }
   };
 
@@ -290,8 +304,10 @@ export default function Home() {
         user={user}
         authorizedEmails={AUTHORIZED_EMAILS}
         onLogin={handleLogin}
+        onLoginRedirect={handleLoginRedirect}
         onLogout={handleLogout}
         isConfigured={isFirebaseConfigured}
+        errorMessage={loginError}
       />
     );
   }
