@@ -2,15 +2,21 @@
 
 import React from 'react';
 import { Expense } from '../lib/types';
-import { Wallet, DollarSign, Banknote, Smartphone, TrendingUp } from 'lucide-react';
+import { Wallet, DollarSign, Banknote, Smartphone, Briefcase, TrendingUp, Edit3 } from 'lucide-react';
 
 interface HeroStatsProps {
   expenses: Expense[];
   monthLabel?: string;
-  budgetARS?: number;
+  salaryARS?: number;
+  onOpenSalaryModal?: () => void;
 }
 
-export function HeroStats({ expenses, monthLabel = 'Noviembre 2026', budgetARS = 1800000 }: HeroStatsProps) {
+export function HeroStats({
+  expenses,
+  monthLabel = 'Noviembre 2026',
+  salaryARS = 1800000,
+  onOpenSalaryModal,
+}: HeroStatsProps) {
   // Calculate Totals
   const totalARS = expenses
     .filter(e => e.currency === 'ARS')
@@ -20,10 +26,11 @@ export function HeroStats({ expenses, monthLabel = 'Noviembre 2026', budgetARS =
     .filter(e => e.currency === 'USD')
     .reduce((sum, e) => sum + e.amount, 0);
 
-  const budgetPct = Math.min(Math.round((totalARS / budgetARS) * 100), 100);
-  const remainingARS = Math.max(budgetARS - totalARS, 0);
+  const salaryPct = salaryARS > 0 ? Math.round((totalARS / salaryARS) * 100) : 0;
+  const remainingARS = salaryARS - totalARS;
+  const isOverBudget = remainingARS < 0;
 
-  // Daily average (days in current month or count of unique days)
+  // Daily average
   const uniqueDays = new Set(expenses.map(e => e.date)).size || 1;
   const dailyAverageARS = Math.round(totalARS / uniqueDays);
 
@@ -66,30 +73,40 @@ export function HeroStats({ expenses, monthLabel = 'Noviembre 2026', budgetARS =
 
   return (
     <div className="w-full brutal-card p-5 sm:p-6 space-y-5 bg-white border-[3.5px] border-black shadow-[4px_4px_0px_#000]">
-      {/* Top Header Label */}
-      <div className="flex items-center justify-between flex-wrap gap-2 pb-1">
+      {/* Top Header Label with Salary Button */}
+      <div className="flex items-center justify-between flex-wrap gap-2 pb-1 border-b-[2px] border-black">
         <div className="flex items-center gap-2.5">
           <div className="w-9 h-9 rounded bg-[#FFE500] border-2 border-black flex items-center justify-center font-bold shadow-[2px_2px_0px_#000]">
             <Wallet className="w-5 h-5 text-black" />
           </div>
           <div>
             <h2 className="text-sm sm:text-base font-black tracking-wider uppercase text-slate-800">
-              TOTAL GASTADO EN {monthLabel.toUpperCase()}
+              BALANCE MENSUAL • {monthLabel.toUpperCase()}
             </h2>
-            <p className="text-xs font-bold text-slate-600">{expenses.length} movimientos analizados</p>
+            <p className="text-xs font-bold text-slate-600">{expenses.length} gastos analizados</p>
           </div>
         </div>
 
-        <div className="flex items-center gap-1.5">
-          <span className="brutal-badge bg-[#22C55E] text-black px-2.5 py-1 text-xs font-black border border-black shadow-[1.5px_1.5px_0px_#000]">
-            EN VIVO ⚡
-          </span>
-        </div>
+        {/* Salary / Paritaria Action Button */}
+        {onOpenSalaryModal && (
+          <button
+            onClick={onOpenSalaryModal}
+            className="brutal-btn bg-[#00E5FF] hover:bg-[#00cbe2] text-black px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-black flex items-center gap-1.5 shadow-[2px_2px_0px_#000]"
+            title="Editar sueldo o cargar aumento paritario"
+          >
+            <Briefcase className="w-4 h-4 text-black" />
+            <span>SUELDO: {formatARS(salaryARS)}</span>
+            <Edit3 className="w-3.5 h-3.5 text-black ml-1" />
+          </button>
+        )}
       </div>
 
-      {/* Hero Amounts (Significantly larger numbers) */}
+      {/* Main Amounts Row */}
       <div className="flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-3 pt-1">
         <div>
+          <span className="text-xs font-black uppercase text-slate-500 block mb-1">
+            TOTAL GASTADO EN EL MES
+          </span>
           <span className="text-4xl sm:text-6xl font-black tracking-tight text-black">
             {formatARS(totalARS)}
           </span>
@@ -104,8 +121,38 @@ export function HeroStats({ expenses, monthLabel = 'Noviembre 2026', budgetARS =
         )}
       </div>
 
+      {/* Salary vs Spent Progress Meter */}
+      <div className="bg-[#FFF9D2] border-[2.5px] border-black rounded-xl p-4 space-y-2.5 shadow-[3px_3px_0px_#000]">
+        <div className="flex items-center justify-between text-xs sm:text-sm font-black flex-wrap gap-2">
+          <span className="text-slate-900">
+            💼 SUELDO {formatARS(salaryARS)} ({salaryPct}% GASTADO)
+          </span>
+          <span className={`px-2.5 py-0.5 rounded border border-black shadow-[1px_1px_0px_#000] font-black ${
+            isOverBudget ? 'bg-[#FF5376] text-white' : 'bg-[#22C55E] text-black'
+          }`}>
+            {isOverBudget 
+              ? `🚨 DÉFICIT: -${formatARS(Math.abs(remainingARS))}`
+              : `💰 TE QUEDAN: ${formatARS(remainingARS)} DISPONIBLES`
+            }
+          </span>
+        </div>
+
+        {/* Big Progress bar */}
+        <div className="w-full h-6 bg-[#EEEEEE] border-[3px] border-black rounded-lg relative overflow-hidden">
+          <div
+            className={`h-full border-r-[3px] border-black transition-all duration-500 ${
+              salaryPct > 90 ? 'bg-[#FF5376]' : salaryPct > 70 ? 'bg-[#FFE500]' : 'bg-[#22C55E]'
+            }`}
+            style={{ width: `${Math.min(salaryPct, 100)}%` }}
+          />
+          <div className="absolute inset-0 flex items-center justify-end pr-3 pointer-events-none">
+            <span className="text-xs font-black text-black">{salaryPct}% del sueldo</span>
+          </div>
+        </div>
+      </div>
+
       {/* Cash vs Digital Bar (Critical for Argentine reality) */}
-      <div className="bg-[#FFF9D2] border-[2px] border-black rounded-xl p-3.5 space-y-2 shadow-[2px_2px_0px_#000]">
+      <div className="bg-[#F8F8F8] border-[2px] border-black rounded-xl p-3.5 space-y-2 shadow-[2px_2px_0px_#000]">
         <div className="flex items-center justify-between text-xs sm:text-sm font-black flex-wrap gap-2">
           <span className="flex items-center gap-1.5 text-black">
             <Banknote className="w-5 h-5 text-[#FF5376]" />
@@ -129,30 +176,6 @@ export function HeroStats({ expenses, monthLabel = 'Noviembre 2026', budgetARS =
             className="bg-[#00E5FF] h-full" 
             title={`Digital: ${digitalPct}%`}
           />
-        </div>
-      </div>
-
-      {/* Budget Progress Bar */}
-      <div className="space-y-1.5 pt-1">
-        <div className="flex items-center justify-between text-xs sm:text-sm font-black uppercase">
-          <span className="text-slate-800">
-            PRESUPUESTO: {budgetPct}% CONSUMIDO
-          </span>
-          <span className={budgetPct > 85 ? 'text-[#FF5376]' : 'text-slate-700'}>
-            QUEDAN {formatARS(remainingARS)}
-          </span>
-        </div>
-
-        <div className="w-full h-6 bg-[#EEEEEE] border-[3px] border-black rounded-lg relative overflow-hidden">
-          <div
-            className={`h-full border-r-[3px] border-black transition-all duration-500 ${
-              budgetPct > 85 ? 'bg-[#FF5376]' : budgetPct > 65 ? 'bg-[#FFE500]' : 'bg-[#22C55E]'
-            }`}
-            style={{ width: `${budgetPct}%` }}
-          />
-          <div className="absolute inset-0 flex items-center justify-end pr-3 pointer-events-none">
-            <span className="text-xs font-black text-black">{budgetPct}%</span>
-          </div>
         </div>
       </div>
 

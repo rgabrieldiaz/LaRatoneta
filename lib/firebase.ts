@@ -23,7 +23,7 @@ import {
   getDocs,
   Firestore 
 } from 'firebase/firestore';
-import { Expense } from './types';
+import { Expense, SalaryConfig } from './types';
 import { INITIAL_EXPENSES } from './initialData';
 
 const firebaseConfig = {
@@ -220,4 +220,56 @@ export async function seedInitialExpensesIfEmpty(userId: string, initialExpenses
     return true;
   }
   return false;
+}
+
+/**
+ * Reset all expenses in Firestore and seed the clean November batch
+ */
+export async function resetAndSeedExpenses(userId: string, expenses: Expense[]): Promise<void> {
+  if (!db) return;
+  const colRef = collection(db, 'users', userId, 'expenses');
+  const snap = await getDocs(colRef);
+  
+  const batch = writeBatch(db);
+  snap.forEach(docSnap => {
+    batch.delete(docSnap.ref);
+  });
+  await batch.commit();
+
+  await bulkImportToFirestore(userId, expenses);
+}
+
+/**
+ * Salary and Paritaria Management
+ */
+export const DEFAULT_SALARY_CONFIG: SalaryConfig = {
+  baseSalary: 1800000,
+  monthlyOverrides: {
+    '2026-11': 1800000,
+  },
+};
+
+export function subscribeToSalary(userId: string, callback: (config: SalaryConfig) => void) {
+  if (!db) {
+    callback(DEFAULT_SALARY_CONFIG);
+    return () => {};
+  }
+
+  const docRef = doc(db, 'users', userId, 'settings', 'salary');
+  return onSnapshot(docRef, (docSnap) => {
+    if (docSnap.exists()) {
+      callback(docSnap.data() as SalaryConfig);
+    } else {
+      callback(DEFAULT_SALARY_CONFIG);
+    }
+  }, (err) => {
+    console.warn('Salary sync note (using default):', err?.message || err);
+    callback(DEFAULT_SALARY_CONFIG);
+  });
+}
+
+export async function saveSalaryToFirestore(userId: string, config: SalaryConfig): Promise<void> {
+  if (!db) return;
+  const docRef = doc(db, 'users', userId, 'settings', 'salary');
+  await setDoc(docRef, { ...config, updatedAt: new Date().toISOString() }, { merge: true });
 }

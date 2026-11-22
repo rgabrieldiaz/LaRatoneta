@@ -12,8 +12,9 @@ import { ExpenseList } from '../components/ExpenseList';
 import { KeepBatchModal } from '../components/KeepBatchModal';
 import { IntegrationsDrawer } from '../components/IntegrationsDrawer';
 import { PrivateGate } from '../components/PrivateGate';
+import { SalaryModal } from '../components/SalaryModal';
 import { INITIAL_EXPENSES } from '../lib/initialData';
-import { Expense } from '../lib/types';
+import { Expense, SalaryConfig } from '../lib/types';
 import { 
   getAvailableMonths, 
   filterExpensesByMonth, 
@@ -21,7 +22,6 @@ import {
 } from '../lib/dateUtils';
 import { 
   loginWithGoogle, 
-  loginWithGoogleRedirect,
   logoutUser, 
   onUserAuthStateChanged, 
   isFirebaseConfigured,
@@ -33,6 +33,10 @@ import {
   rejectPendingInFirestore,
   bulkImportToFirestore,
   seedInitialExpensesIfEmpty,
+  resetAndSeedExpenses,
+  subscribeToSalary,
+  saveSalaryToFirestore,
+  DEFAULT_SALARY_CONFIG,
   PRIMARY_LEDGER_ID,
   AUTHORIZED_EMAILS
 } from '../lib/firebase';
@@ -45,6 +49,8 @@ export default function Home() {
   const [pendingExpenses, setPendingExpenses] = useState<Expense[]>([]);
   const [isBatchModalOpen, setIsBatchModalOpen] = useState(false);
   const [isIntegrationsOpen, setIsIntegrationsOpen] = useState(false);
+  const [isSalaryModalOpen, setIsSalaryModalOpen] = useState(false);
+  const [salaryConfig, setSalaryConfig] = useState<SalaryConfig>(DEFAULT_SALARY_CONFIG);
   const [isLoaded, setIsLoaded] = useState(false);
 
   // Month navigation state
@@ -118,6 +124,21 @@ export default function Home() {
     }
   }, [user, isAuthorized]);
 
+  // 3. Load and Sync Salary from shared Firestore ledger
+  useEffect(() => {
+    if (user && isAuthorized && isFirebaseConfigured) {
+      const unsubSalary = subscribeToSalary(PRIMARY_LEDGER_ID, (config) => {
+        setSalaryConfig(config || DEFAULT_SALARY_CONFIG);
+      });
+      return () => unsubSalary();
+    }
+  }, [user, isAuthorized]);
+
+  // Active salary for selected month (with paritarias or custom monthly override)
+  const activeSalary = useMemo(() => {
+    return salaryConfig.monthlyOverrides?.[selectedMonthKey] ?? salaryConfig.baseSalary ?? 1800000;
+  }, [salaryConfig, selectedMonthKey]);
+
   // Months available based on actual expenses
   const availableMonths = useMemo(() => {
     return getAvailableMonths(expenses);
@@ -139,16 +160,6 @@ export default function Home() {
       await loginWithGoogle();
     } catch (error: any) {
       console.error('Error loginWithGoogle:', error);
-      setLoginError(error?.message || String(error));
-    }
-  };
-
-  const handleLoginRedirect = async () => {
-    try {
-      setLoginError(null);
-      await loginWithGoogleRedirect();
-    } catch (error: any) {
-      console.error('Error loginWithGoogleRedirect:', error);
       setLoginError(error?.message || String(error));
     }
   };
@@ -222,6 +233,40 @@ export default function Home() {
       }
     } else {
       setPendingExpenses(prev => prev.filter(p => p.id !== id));
+    }
+  };
+
+  // Salary and Paritarias saving handler
+  const handleSaveSalary = async (amount: number, isParitaria: boolean) => {
+    const newConfig: SalaryConfig = {
+      baseSalary: isParitaria ? amount : (salaryConfig.baseSalary ?? amount),
+      monthlyOverrides: {
+        ...(salaryConfig.monthlyOverrides || {}),
+        [selectedMonthKey]: amount,
+      },
+      updatedAt: new Date().toISOString(),
+    };
+    setSalaryConfig(newConfig);
+    if (user && isFirebaseConfigured) {
+      try {
+        await saveSalaryToFirestore(PRIMARY_LEDGER_ID, newConfig);
+      } catch (e) {
+        console.error('Error saving salary to Firestore:', e);
+      }
+    }
+  };
+
+  // Safe developer action: Reset & re-seed the exact clean 70 expenses for Nov 2026
+  const handleResetNovemberExpenses = async () => {
+    if (!confirm('¿Querés limpiar y recargar los 70 gastos oficiales de Noviembre 2026 en Firestore?')) return;
+    try {
+      if (user && isFirebaseConfigured) {
+        await resetAndSeedExpenses(PRIMARY_LEDGER_ID, INITIAL_EXPENSES);
+      }
+      setExpenses(INITIAL_EXPENSES);
+      alert('¡Listo! Se cargaron los 70 gastos limpios de Noviembre.');
+    } catch (e: any) {
+      alert('Error al resetear gastos: ' + (e.message || e));
     }
   };
 
@@ -304,7 +349,6 @@ export default function Home() {
         user={user}
         authorizedEmails={AUTHORIZED_EMAILS}
         onLogin={handleLogin}
-        onLoginRedirect={handleLoginRedirect}
         onLogout={handleLogout}
         isConfigured={isFirebaseConfigured}
         errorMessage={loginError}
@@ -331,8 +375,14 @@ export default function Home() {
 
       {/* Developer notice banner if Gabo is inspecting */}
       {isDevUser && (
-        <div className="bg-black text-[#FFE500] px-4 py-1.5 text-xs font-black text-center uppercase tracking-wider flex items-center justify-center gap-2">
-          <span>🛠️ MODO DESARROLLADOR / ADMIN: Sesión activa como {user?.email}</span>
+        <div className="bg-black text-[#FFE500] px-4 py-2 text-xs font-black text-center uppercase tracking-wider flex items-center justify-center gap-3 flex-wrap">
+          <span>🛠️ MODO ADMIN / DESARROLLADOR: Sesión como {user?.email}</span>
+          <button
+            onClick={handleResetNovemberExpenses}
+            className="bg-[#FFE500] text-black px-3 py-1 rounded-md border-[2px] border-black shadow-[2px_2px_0px_#fff] text-xs font-black uppercase hover:bg-white transition-all active:scale-95"
+          >
+            🔄 Recargar los 70 gastos limpios de Noviembre
+          </button>
         </div>
       )}
 
@@ -351,7 +401,8 @@ export default function Home() {
         <HeroStats 
           expenses={monthlyExpenses} 
           monthLabel={selectedMonthLabel}
-          budgetARS={1800000} 
+          salaryARS={activeSalary}
+          onOpenSalaryModal={() => setIsSalaryModalOpen(true)}
         />
 
         {/* Category Donut / Pie Chart with Percentages & Legend */}
@@ -392,6 +443,15 @@ export default function Home() {
       <IntegrationsDrawer
         isOpen={isIntegrationsOpen}
         onClose={() => setIsIntegrationsOpen(false)}
+      />
+
+      {/* Salary & Paritarias Modal */}
+      <SalaryModal
+        isOpen={isSalaryModalOpen}
+        onClose={() => setIsSalaryModalOpen(false)}
+        selectedMonthKey={selectedMonthKey}
+        salaryConfig={salaryConfig}
+        onSaveSalary={handleSaveSalary}
       />
     </div>
   );

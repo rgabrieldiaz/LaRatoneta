@@ -32,3 +32,9 @@ export interface Expense {
   source: 'MANUAL' | 'KEEP_BATCH' | 'NOTIFICATION' | 'EMAIL';
   note?: string;
 }
+
+export interface SalaryConfig {
+  baseSalary: number;
+  monthlyOverrides: Record<string, number>;
+  updatedAt?: string;
+}

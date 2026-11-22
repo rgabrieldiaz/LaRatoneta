@@ -8,7 +8,6 @@ interface PrivateGateProps {
   user: User | null;
   authorizedEmails: string[];
   onLogin: () => void;
-  onLoginRedirect: () => void;
   onLogout: () => void;
   isConfigured: boolean;
   errorMessage?: string | null;
@@ -18,7 +17,6 @@ export function PrivateGate({
   user,
   authorizedEmails,
   onLogin,
-  onLoginRedirect,
   onLogout,
   errorMessage,
 }: PrivateGateProps) {
@@ -132,15 +130,6 @@ export function PrivateGate({
               </svg>
               <span>Continuar con Google</span>
               <ArrowRight className="w-4 h-4 ml-auto" />
-            </button>
-
-            {/* Alternative Direct Redirect Login (bypasses popups 100%) */}
-            <button
-              onClick={onLoginRedirect}
-              className="w-full py-2.5 px-4 bg-slate-100 hover:bg-slate-200 border-[2px] border-black rounded-lg text-xs font-black text-black flex items-center justify-center gap-2 shadow-[2px_2px_0px_#000] transition-colors"
-            >
-              <ExternalLink className="w-3.5 h-3.5" />
-              <span>O ingresar por Redirección Directa (Sin popups)</span>
             </button>
 
             <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
