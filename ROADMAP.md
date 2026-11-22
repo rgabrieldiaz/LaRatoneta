@@ -69,7 +69,7 @@ Apple Pay captura pagos apoyando el iPhone en el posnet, pero **no cubre** pagos
 * [x] **PWA real para iPhone:** `manifest.json`, `apple-touch-icon.png` (180x180) y modo pantalla completa sin barra de Safari.
 * [ ] **Reintegros y gastos compartidos:** Poder registrar un reintegro (MODO/Personal Pay) o devolución de una salida para que reste directo del gasto/categoría sin ensuciar los ingresos.
 * [ ] **Aprendizaje de comercios:** Si el usuario corrige la categoría de un comercio nuevo (ej. `"Lo de Pepe"`), recordarlo para futuras cargas automáticas o por voz.
-* [ ] **Topes / alertas por categoría:** Fijar un límite mensual por rubro (ej. avisar si *Comida & Salidas* supera cierto monto).
+* [ ] **Topes / alertas por categoría:** Botón `🎯 Topes` dentro del *Gráfico de Torta* (opcional por rubro, con referencia del gasto actual). Aviso no invasivo en 2 niveles: etiqueta visual en la tarjeta (80% ámbar / ≥100% rojo) y toast de 4s solo cuando un gasto nuevo cruza el umbral.
 * [x] **"Deshacer" al borrar:** Aviso temporal de 5 segundos tras eliminar un gasto para evitar errores de dedo en el celular. (Más rate limiting en `/api/webhook`).
 * [ ] **Checklist de Gastos Fijos mensuales:** Recordatorio visual para verificar si en el mes ya se cargaron Expensas, Luz, Gas, Agua e Internet (detectando rápido si faltó anotar algún servicio).
 * [ ] **Cuotas de Tarjeta de Crédito:** Soporte para compras en cuotas (ej. 3/6/12 cuotas) que proyecte automáticamente la cuota correspondiente en los meses siguientes.
