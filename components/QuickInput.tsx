@@ -2,19 +2,45 @@
 
 import React, { useState } from 'react';
 import { parseRawKeepText } from '../lib/keepParser';
-import { Expense } from '../lib/types';
-import { Zap, Mic, Camera, Plus, ClipboardList, Sparkles } from 'lucide-react';
+import { Category, Expense, PaymentMethod } from '../lib/types';
+import { Zap, Mic, Plus, ClipboardList, SlidersHorizontal } from 'lucide-react';
 
 interface QuickInputProps {
   onAddExpense: (expense: Expense) => void;
   onOpenBatchModal: () => void;
 }
 
+const MANUAL_CATEGORIES: Category[] = [
+  'Supermercados',
+  'Frescos & Panadería',
+  'Comida & Salidas',
+  'Hogar & Servicios',
+  'Transporte',
+  'Salud & Farmacia',
+  'Cuidado & Varios',
+];
+
+const MANUAL_METHODS: { value: PaymentMethod; label: string }[] = [
+  { value: 'EFECTIVO', label: '💵 Efectivo' },
+  { value: 'CUENTA', label: '⚡ En Cuenta (Débito/Billeteras/Ripio)' },
+  { value: 'CREDITO', label: '💳 Tarjeta de Crédito' },
+  { value: 'SUBE', label: '🚌 SUBE' },
+];
+
 export function QuickInput({ onAddExpense, onOpenBatchModal }: QuickInputProps) {
+  const [mode, setMode] = useState<'QUICK' | 'MANUAL'>('QUICK');
   const [inputVal, setInputVal] = useState('');
   const [isListening, setIsListening] = useState(false);
 
-  const handleSubmit = (e?: React.FormEvent) => {
+  // Manual mode states
+  const [manualTitle, setManualTitle] = useState('');
+  const [manualAmount, setManualAmount] = useState('');
+  const [manualCategory, setManualCategory] = useState<Category>('Supermercados');
+  const [manualMethod, setManualMethod] = useState<PaymentMethod>('CUENTA');
+  const [manualDate, setManualDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [manualNote, setManualNote] = useState('');
+
+  const handleQuickSubmit = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!inputVal.trim()) return;
 
@@ -23,20 +49,46 @@ export function QuickInput({ onAddExpense, onOpenBatchModal }: QuickInputProps) 
       onAddExpense(parsedList[0]);
       setInputVal('');
     } else {
-      // Fallback if no number is found, assume 0 or prompt
-      alert('Por favor ingresá concepto y monto (ejemplo: "chino 3500" o "uber 4500")');
+      alert('Ingresá concepto y monto (ej: "chino 4500 efectivo" o "uber 3800")');
     }
   };
 
+  const handleManualSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const numericAmount = parseFloat(manualAmount);
+    if (!manualTitle.trim() || isNaN(numericAmount) || numericAmount <= 0) {
+      alert('Completá el concepto y un monto válido en pesos.');
+      return;
+    }
+
+    const newExpense: Expense = {
+      id: `manual-${Date.now()}`,
+      title: manualTitle.trim().charAt(0).toUpperCase() + manualTitle.trim().slice(1),
+      amount: numericAmount,
+      currency: 'ARS',
+      category: manualCategory,
+      method: manualMethod,
+      date: manualDate,
+      isConfirmed: true,
+      source: 'MANUAL',
+      ...(manualNote.trim() ? { note: manualNote.trim() } : {}),
+    };
+
+    onAddExpense(newExpense);
+    setManualTitle('');
+    setManualAmount('');
+    setManualNote('');
+  };
+
   const handleQuickPreset = (presetName: string) => {
+    setMode('QUICK');
     setInputVal(`${presetName} `);
   };
 
   const handleVoiceToggle = () => {
-    // Check SpeechRecognition support
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
-      alert('Tu navegador no soporta dictado por voz nativo. Podes tipear directamente "chino 2500" o usar el modal de Keep!');
+      alert('Tu navegador no soporta dictado por voz. Podés escribir directo (ej: "chino 2500 efectivo").');
       return;
     }
 
@@ -63,82 +115,205 @@ export function QuickInput({ onAddExpense, onOpenBatchModal }: QuickInputProps) 
   };
 
   return (
-    <div className="w-full brutal-card-purple p-4 space-y-3">
-      {/* Header */}
+    <div className="w-full brutal-card-purple p-4 sm:p-5 space-y-3.5">
+      {/* Header with Mode Switch & Bulk Import */}
       <div className="flex items-center justify-between flex-wrap gap-2">
-        <div className="flex items-center gap-1.5 px-2.5 py-1 bg-white border-[2.5px] border-black rounded shadow-[2px_2px_0px_#000]">
-          <Zap className="w-4 h-4 text-black fill-[#FFE500]" />
-          <span className="text-xs font-black uppercase tracking-wider">CARGA ULTRA-RÁPIDA (KEEP STYLE)</span>
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-1.5 px-2.5 py-1 bg-white border-[2.5px] border-black rounded shadow-[2px_2px_0px_#000]">
+            <Zap className="w-4 h-4 text-black fill-[#FFE500]" />
+            <span className="text-xs font-black uppercase tracking-wider">AGREGAR GASTO</span>
+          </div>
+
+          {/* Mode Tabs */}
+          <div className="inline-flex bg-white border-[2px] border-black rounded-lg overflow-hidden shadow-[2px_2px_0px_#000]">
+            <button
+              type="button"
+              onClick={() => setMode('QUICK')}
+              className={`px-2.5 py-1 text-xs font-black flex items-center gap-1 transition-colors ${
+                mode === 'QUICK' ? 'bg-[#FFE500] text-black' : 'text-slate-600 hover:bg-slate-50'
+              }`}
+            >
+              <Zap className="w-3 h-3" />
+              <span>Rápido</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode('MANUAL')}
+              className={`px-2.5 py-1 text-xs font-black flex items-center gap-1 border-l-[2px] border-black transition-colors ${
+                mode === 'MANUAL' ? 'bg-[#FFE500] text-black' : 'text-slate-600 hover:bg-slate-50'
+              }`}
+            >
+              <SlidersHorizontal className="w-3 h-3" />
+              <span>Manual</span>
+            </button>
+          </div>
         </div>
 
         <button
+          type="button"
           onClick={onOpenBatchModal}
           className="text-xs font-black underline hover:text-[#FF5376] flex items-center gap-1"
         >
           <ClipboardList className="w-3.5 h-3.5" />
-          <span>Pegar lote de Keep</span>
+          <span>Carga masiva</span>
         </button>
       </div>
 
-      {/* Main Input Form */}
-      <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row items-stretch gap-2.5">
-        <div className="relative flex-1">
-          <input
-            type="text"
-            value={inputVal}
-            onChange={(e) => setInputVal(e.target.value)}
-            placeholder="Ej: chino 19510, taxi 4500, cafe 3200..."
-            className="w-full h-14 px-4 bg-white border-[3px] border-black rounded-xl text-base sm:text-lg font-black placeholder:text-slate-400 placeholder:font-normal focus:outline-none focus:ring-0 shadow-[3px_3px_0px_#000]"
-          />
-        </div>
+      {mode === 'QUICK' ? (
+        <>
+          {/* Quick Text Input Form */}
+          <form onSubmit={handleQuickSubmit} className="flex flex-col sm:flex-row items-stretch gap-2.5">
+            <div className="relative flex-1">
+              <input
+                type="text"
+                value={inputVal}
+                onChange={(e) => setInputVal(e.target.value)}
+                placeholder="Ej: chino 4500 efectivo, big pons 23200 credito..."
+                className="w-full h-14 px-4 bg-white border-[3px] border-black rounded-xl text-base sm:text-lg font-black placeholder:text-slate-400 placeholder:font-normal focus:outline-none focus:ring-0 shadow-[3px_3px_0px_#000]"
+              />
+            </div>
 
-        {/* Buttons */}
-        <div className="flex items-center gap-2">
-          {/* Voice button */}
-          <button
-            type="button"
-            onClick={handleVoiceToggle}
-            className={`w-14 h-14 flex items-center justify-center border-[3px] border-black rounded-xl shadow-[3px_3px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all ${
-              isListening ? 'bg-[#FF5376] text-white animate-pulse' : 'bg-[#22C55E] text-black'
-            }`}
-            title="Dictar por voz"
-          >
-            <Mic className="w-6 h-6" />
-          </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleVoiceToggle}
+                className={`w-14 h-14 flex items-center justify-center border-[3px] border-black rounded-xl shadow-[3px_3px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all ${
+                  isListening ? 'bg-[#FF5376] text-white animate-pulse' : 'bg-[#22C55E] text-black'
+                }`}
+                title="Dictar por voz"
+              >
+                <Mic className="w-6 h-6" />
+              </button>
 
-          {/* Add Button */}
-          <button
-            type="submit"
-            className="flex-1 sm:flex-none h-14 px-6 bg-[#FF5376] text-white border-[3px] border-black rounded-xl shadow-[3px_3px_0px_#000] font-black uppercase text-sm sm:text-base flex items-center justify-center gap-2 active:translate-x-1 active:translate-y-1 active:shadow-none transition-all hover:bg-[#ff3863]"
-          >
-            <Plus className="w-6 h-6" />
-            <span>+ AGREGAR 💥</span>
-          </button>
-        </div>
-      </form>
+              <button
+                type="submit"
+                className="flex-1 sm:flex-none h-14 px-6 bg-[#FF5376] text-white border-[3px] border-black rounded-xl shadow-[3px_3px_0px_#000] font-black uppercase text-sm sm:text-base flex items-center justify-center gap-2 active:translate-x-1 active:translate-y-1 active:shadow-none transition-all hover:bg-[#ff3863]"
+              >
+                <Plus className="w-5 h-5" />
+                <span>Agregar</span>
+              </button>
+            </div>
+          </form>
 
-      {/* Quick Presets for her daily frequent shops */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar pt-1">
-        <span className="text-xs font-black uppercase text-slate-700 shrink-0">ATAJOS:</span>
-        {[
-          { label: '🥡 Chino', val: 'Chino' },
-          { label: '🥬 Verdulería', val: 'Verdulería' },
-          { label: '🥖 Panadería', val: 'Panadería' },
-          { label: '🥩 Carnicería', val: 'Carnicería' },
-          { label: '🚗 Cabify', val: 'Cabify' },
-          { label: '🍕 Comida', val: 'Comida' },
-          { label: '🚌 Sube', val: 'Sube' },
-        ].map((p) => (
-          <button
-            key={p.label}
-            type="button"
-            onClick={() => handleQuickPreset(p.val)}
-            className="px-3 py-1.5 bg-white border-[2px] border-black rounded-lg text-xs sm:text-sm font-black shrink-0 shadow-[1.5px_1.5px_0px_#000] hover:bg-[#FFE500] active:translate-x-0.5 active:translate-y-0.5"
-          >
-            {p.label}
-          </button>
-        ))}
-      </div>
+          {/* Quick Presets */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar pt-0.5">
+            <span className="text-xs font-black uppercase text-slate-700 shrink-0">ATAJOS:</span>
+            {[
+              { label: '🥡 Chino', val: 'Chino' },
+              { label: '🥬 Verdulería', val: 'Verdulería' },
+              { label: '🥖 Panadería', val: 'Panadería' },
+              { label: '🥩 Carnicería', val: 'Carnicería' },
+              { label: '🚗 Cabify', val: 'Cabify' },
+              { label: '🍕 Comida', val: 'Comida' },
+              { label: '🚌 Sube', val: 'Sube' },
+            ].map((p) => (
+              <button
+                key={p.label}
+                type="button"
+                onClick={() => handleQuickPreset(p.val)}
+                className="px-3 py-1.5 bg-white border-[2px] border-black rounded-lg text-xs sm:text-sm font-black shrink-0 shadow-[1.5px_1.5px_0px_#000] hover:bg-[#FFE500] active:translate-x-0.5 active:translate-y-0.5"
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
+        </>
+      ) : (
+        /* Classic Manual Form */
+        <form onSubmit={handleManualSubmit} className="bg-white border-[3px] border-black rounded-xl p-4 space-y-3 shadow-[3px_3px_0px_#000]">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="sm:col-span-2">
+              <label className="block text-xs font-black uppercase text-slate-700 mb-1">Concepto</label>
+              <input
+                type="text"
+                value={manualTitle}
+                onChange={(e) => setManualTitle(e.target.value)}
+                placeholder="Ej: Supermercado Coto, Farmacia..."
+                className="w-full h-11 px-3 bg-[#F8F8F8] border-[2px] border-black rounded-lg text-sm font-bold focus:outline-none focus:bg-white"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-black uppercase text-slate-700 mb-1">Monto ($ ARS)</label>
+              <input
+                type="number"
+                step="1"
+                min="1"
+                value={manualAmount}
+                onChange={(e) => setManualAmount(e.target.value)}
+                placeholder="15000"
+                className="w-full h-11 px-3 bg-[#F8F8F8] border-[2px] border-black rounded-lg text-base font-black focus:outline-none focus:bg-white"
+                required
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label className="block text-xs font-black uppercase text-slate-700 mb-1">Categoría</label>
+              <select
+                value={manualCategory}
+                onChange={(e) => setManualCategory(e.target.value as Category)}
+                className="w-full h-11 px-2.5 bg-[#F8F8F8] border-[2px] border-black rounded-lg text-xs sm:text-sm font-bold focus:outline-none focus:bg-white"
+              >
+                {MANUAL_CATEGORIES.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-black uppercase text-slate-700 mb-1">Método de pago</label>
+              <select
+                value={manualMethod}
+                onChange={(e) => setManualMethod(e.target.value as PaymentMethod)}
+                className="w-full h-11 px-2.5 bg-[#F8F8F8] border-[2px] border-black rounded-lg text-xs sm:text-sm font-bold focus:outline-none focus:bg-white"
+              >
+                {MANUAL_METHODS.map((m) => (
+                  <option key={m.value} value={m.value}>
+                    {m.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-black uppercase text-slate-700 mb-1">Fecha</label>
+              <input
+                type="date"
+                value={manualDate}
+                onChange={(e) => setManualDate(e.target.value)}
+                className="w-full h-11 px-3 bg-[#F8F8F8] border-[2px] border-black rounded-lg text-sm font-bold focus:outline-none focus:bg-white"
+                required
+              />
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-end gap-3 pt-1">
+            <div className="flex-1">
+              <label className="block text-xs font-black uppercase text-slate-700 mb-1">Detalle / Billetera (opcional)</label>
+              <input
+                type="text"
+                value={manualNote}
+                onChange={(e) => setManualNote(e.target.value)}
+                placeholder="Ej: Ripio NFC, Personal Pay, Apple Pay..."
+                className="w-full h-11 px-3 bg-[#F8F8F8] border-[2px] border-black rounded-lg text-xs sm:text-sm font-bold focus:outline-none focus:bg-white"
+              />
+            </div>
+
+            <button
+              type="submit"
+              className="h-11 px-6 bg-[#22C55E] text-black border-[2.5px] border-black rounded-lg shadow-[3px_3px_0px_#000] font-black uppercase text-sm flex items-center justify-center gap-1.5 hover:bg-[#1eb353]"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Guardar gasto</span>
+            </button>
+          </div>
+        </form>
+      )}
     </div>
   );
 }

@@ -197,29 +197,6 @@ export function CategoryPieChart({ expenses, selectedMonthLabel }: CategoryPieCh
           </div>
         </div>
 
-        {/* Currency Switcher */}
-        <div className="flex items-center gap-1.5 bg-[#FFF9D2] border-[2px] border-black rounded-lg p-1.5 shadow-[2px_2px_0px_#000]">
-          <button
-            onClick={() => { setCurrency('ARS'); setHoveredCategory(null); }}
-            className={`px-3.5 py-1.5 rounded-md text-xs sm:text-sm font-black transition-all ${
-              currency === 'ARS'
-                ? 'bg-[#22C55E] text-black border border-black shadow-[1px_1px_0px_#000]'
-                : 'text-slate-600 hover:text-black'
-            }`}
-          >
-            🇦🇷 PESOS (ARS)
-          </button>
-          <button
-            onClick={() => { setCurrency('USD'); setHoveredCategory(null); }}
-            className={`px-3.5 py-1.5 rounded-md text-xs sm:text-sm font-black transition-all ${
-              currency === 'USD'
-                ? 'bg-[#00E5FF] text-black border border-black shadow-[1px_1px_0px_#000]'
-                : 'text-slate-600 hover:text-black'
-            }`}
-          >
-            🇺🇸 DÓLAR (USD)
-          </button>
-        </div>
       </div>
 
       {/* Main Content Area */}

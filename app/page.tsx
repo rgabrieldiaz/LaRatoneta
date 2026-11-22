@@ -400,6 +400,12 @@ export default function Home() {
           monthlyCount={monthlyExpenses.length}
         />
 
+        {/* Primary Action: Add Expense (Quick or Manual) right at the top */}
+        <QuickInput
+          onAddExpense={handleAddExpense}
+          onOpenBatchModal={() => setIsBatchModalOpen(true)}
+        />
+
         {/* Hero Card with Totals, Cash vs Account vs Credit & Income Meter */}
         <HeroStats 
           expenses={monthlyExpenses} 
@@ -412,12 +418,6 @@ export default function Home() {
         <CategoryPieChart
           expenses={monthlyExpenses}
           selectedMonthLabel={selectedMonthLabel}
-        />
-
-        {/* Ultra-fast Smart Input (Keep style) */}
-        <QuickInput
-          onAddExpense={handleAddExpense}
-          onOpenBatchModal={() => setIsBatchModalOpen(true)}
         />
 
         {/* Full Expenses Ledger with Filter chips, Search, Edit & Delete */}

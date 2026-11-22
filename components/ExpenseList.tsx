@@ -219,7 +219,6 @@ export function ExpenseList({ expenses, onDeleteExpense, onUpdateExpense }: Expe
           { label: '🚗 Transporte', val: 'Transporte' },
           { label: '🩺 Salud & Farmacia', val: 'Salud & Farmacia' },
           { label: '🛍️ Cuidado & Varios', val: 'Cuidado & Varios' },
-          { label: '💳 Resúmenes Tarjeta', val: 'Resúmenes Tarjeta' },
         ].map((c) => (
           <button
             key={c.val}

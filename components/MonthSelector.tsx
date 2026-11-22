@@ -36,47 +36,42 @@ export function MonthSelector({
   return (
     <div className="w-full brutal-card p-3.5 bg-white border-[3px] border-black shadow-[4px_4px_0px_#000] flex flex-wrap items-center justify-between gap-3">
       
-      {/* Month Navigator with Arrows */}
-      <div className="flex items-center gap-2 flex-wrap">
-        <div className="flex items-center bg-[#FFE500] border-[2px] border-black rounded shadow-[2px_2px_0px_#000] overflow-hidden">
-          <button
-            onClick={handlePrev}
-            disabled={currentIndex >= availableMonths.length - 1 || currentMonthKey === 'ALL'}
-            className="p-1.5 hover:bg-yellow-400 disabled:opacity-30 disabled:hover:bg-transparent transition-colors border-r border-black"
-            title="Mes anterior"
-          >
-            <ChevronLeft className="w-5 h-5 text-black" />
-          </button>
+      {/* Unified Month Navigator (Arrows + Dropdown in one block) */}
+      <div className="flex items-center bg-[#FFE500] border-[2.5px] border-black rounded-lg shadow-[2px_2px_0px_#000] overflow-hidden">
+        <button
+          onClick={handlePrev}
+          disabled={currentIndex >= availableMonths.length - 1 || currentMonthKey === 'ALL'}
+          className="p-2 hover:bg-yellow-400 disabled:opacity-30 disabled:hover:bg-transparent transition-colors border-r-[2px] border-black"
+          title="Mes anterior"
+        >
+          <ChevronLeft className="w-5 h-5 text-black" />
+        </button>
 
-          <div className="flex items-center gap-2 px-3.5 py-1.5 font-black text-sm sm:text-base text-black">
-            <Calendar className="w-5 h-5 text-black" />
-            <span>{formatMonthLabel(currentMonthKey)}</span>
-          </div>
-
-          <button
-            onClick={handleNext}
-            disabled={currentIndex <= 0 || currentMonthKey === 'ALL'}
-            className="p-2 hover:bg-yellow-400 disabled:opacity-30 disabled:hover:bg-transparent transition-colors border-l border-black"
-            title="Mes siguiente"
+        <div className="flex items-center gap-1.5 px-2.5">
+          <Calendar className="w-4 h-4 text-black shrink-0" />
+          <select
+            value={currentMonthKey}
+            onChange={(e) => onSelectMonth(e.target.value)}
+            aria-label="Seleccionar mes"
+            className="bg-transparent text-sm sm:text-base font-black text-black py-1.5 pr-2 cursor-pointer focus:outline-none"
           >
-            <ChevronRight className="w-5 h-5 text-black" />
-          </button>
+            {availableMonths.map((m) => (
+              <option key={m} value={m}>
+                {formatMonthLabel(m)}
+              </option>
+            ))}
+            <option value="ALL">Histórico Completo (Todos)</option>
+          </select>
         </div>
 
-        {/* Dropdown selector for all months */}
-        <select
-          value={currentMonthKey}
-          onChange={(e) => onSelectMonth(e.target.value)}
-          aria-label="Seleccionar mes para filtrar gastos"
-          className="bg-white border-[2px] border-black text-xs sm:text-sm font-black px-3 py-2 rounded-lg shadow-[2px_2px_0px_#000] cursor-pointer hover:bg-slate-50 focus:outline-none"
+        <button
+          onClick={handleNext}
+          disabled={currentIndex <= 0 || currentMonthKey === 'ALL'}
+          className="p-2 hover:bg-yellow-400 disabled:opacity-30 disabled:hover:bg-transparent transition-colors border-l-[2px] border-black"
+          title="Mes siguiente"
         >
-          {availableMonths.map((m) => (
-            <option key={m} value={m}>
-              {formatMonthLabel(m)}
-            </option>
-          ))}
-          <option value="ALL">🗓️ Histórico Completo (Todos)</option>
-        </select>
+          <ChevronRight className="w-5 h-5 text-black" />
+        </button>
       </div>
 
       {/* Info Badge */}

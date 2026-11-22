@@ -1,5 +1,49 @@
 import { Category, Expense, PaymentMethod } from './types';
 
+interface MethodOverrideResult {
+  cleanedText: string;
+  explicitMethod?: PaymentMethod;
+  explicitNote?: string;
+}
+
+/**
+ * Extracts explicit payment method phrases (e.g. "pagado en efectivo", "credito", "ripio", "mp")
+ * from anywhere in the input string so the title and amount stay clean.
+ */
+function extractExplicitMethod(raw: string): MethodOverrideResult {
+  let text = raw;
+  let explicitMethod: PaymentMethod | undefined;
+  let explicitNote: string | undefined;
+
+  const patterns: { regex: RegExp; method: PaymentMethod; note?: string }[] = [
+    { regex: /\b(?:pagado\s+en\s+|en\s+|con\s+)?(efectivo|efvo|cash)\b/i, method: 'EFECTIVO' },
+    { regex: /\b(?:pagado\s+con\s+|con\s+|en\s+)?(apple\s*pay)\b/i, method: 'CREDITO', note: 'Apple Pay Crédito' },
+    { regex: /\b(?:pagado\s+con\s+|con\s+|en\s+)?(cr[eé]dito|tarjeta\s+de\s+cr[eé]dito|visa|amex|mastercard)\b/i, method: 'CREDITO' },
+    { regex: /\b(?:pagado\s+con\s+|con\s+|en\s+)?(ripio)\b/i, method: 'CUENTA', note: 'Ripio Prepaga NFC' },
+    { regex: /\b(?:pagado\s+con\s+|con\s+|en\s+)?(personal\s*pay)\b/i, method: 'CUENTA', note: 'Personal Pay' },
+    { regex: /\b(?:pagado\s+con\s+|con\s+|en\s+)?(mercado\s*pago|mp)\b/i, method: 'CUENTA', note: 'Mercado Pago' },
+    { regex: /\b(?:pagado\s+con\s+|con\s+|en\s+)?(modo)\b/i, method: 'CUENTA', note: 'MODO' },
+    { regex: /\b(?:pagado\s+con\s+|con\s+|en\s+)?(d[eé]bito|cuenta|transferencia|transf)\b/i, method: 'CUENTA' },
+    { regex: /\b(?:pagado\s+con\s+|con\s+|en\s+)?(sube)\b/i, method: 'SUBE' },
+  ];
+
+  for (const p of patterns) {
+    if (p.regex.test(text)) {
+      // Only strip if it's not the ONLY word before the amount (e.g. "Sube 900" should keep "Sube" as title!)
+      const without = text.replace(p.regex, ' ').replace(/\s+/g, ' ').trim();
+      const hasRemainingWords = /[a-zA-ZñÑáéíóúÁÉÍÓÚ]{2,}/.test(without.replace(/[\d\.,]/g, ''));
+      explicitMethod = p.method;
+      if (p.note) explicitNote = p.note;
+      if (hasRemainingWords) {
+        text = without;
+      }
+      break;
+    }
+  }
+
+  return { cleanedText: text.trim(), explicitMethod, explicitNote };
+}
+
 export function parseRawKeepText(text: string): Expense[] {
   const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
   const expenses: Expense[] = [];
@@ -7,50 +51,46 @@ export function parseRawKeepText(text: string): Expense[] {
   const todayStr = new Date().toISOString().split('T')[0];
 
   for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
+    const rawLine = lines[i];
+    const { cleanedText, explicitMethod, explicitNote } = extractExplicitMethod(rawLine);
 
-    // Special case for USD: e.g. "Tarjeta 0,99 dol", "0.99 usd"
-    const dolMatch = line.match(/^(.*?)\s*([\d\.,]+)\s*(?:dol|usd|dólar|dolar|dolares)/i);
-    if (dolMatch) {
-      const title = dolMatch[1].trim() || 'Gasto USD';
-      const amount = parseFloat(dolMatch[2].replace(',', '.'));
-      expenses.push({
-        id: `parsed-${Date.now()}-${i}`,
-        title: title || 'Gasto en Dólares',
-        amount: isNaN(amount) ? 0 : amount,
-        currency: 'USD',
-        category: 'Resúmenes Tarjeta',
-        method: 'CREDITO',
-        date: todayStr,
-        isConfirmed: true,
-        source: 'KEEP_BATCH',
-        note: 'Consumo en USD con Tarjeta de Crédito',
-      });
-      continue;
+    // Match title and amount: supports "Chino 19510" or "19510 Chino"
+    const endAmountMatch = cleanedText.match(/^(.*?)\s+([\d\.,]+)$/);
+    const startAmountMatch = !endAmountMatch ? cleanedText.match(/^([\d\.,]+)\s+(.*)$/) : null;
+
+    let rawTitle = '';
+    let rawAmountStr = '';
+
+    if (endAmountMatch) {
+      rawTitle = endAmountMatch[1].trim();
+      rawAmountStr = endAmountMatch[2];
+    } else if (startAmountMatch) {
+      rawAmountStr = startAmountMatch[1];
+      rawTitle = startAmountMatch[2].trim();
     }
 
-    // General pattern: Title + Amount at end: "Chino 19510", "Comida al peso 14520", etc.
-    const match = line.match(/^(.*?)\s+([\d\.,]+)$/);
-    if (match) {
-      const rawTitle = match[1].trim();
-      const rawAmount = match[2].replace(/\./g, '').replace(',', '.');
-      const amount = parseFloat(rawAmount);
+    if (rawTitle && rawAmountStr) {
+      const normalizedAmount = rawAmountStr.replace(/\./g, '').replace(',', '.');
+      const amount = parseFloat(normalizedAmount);
 
-      if (!isNaN(amount)) {
+      if (!isNaN(amount) && amount > 0) {
         const title = rawTitle.charAt(0).toUpperCase() + rawTitle.slice(1);
-        const { category, method, note } = inferCategoryAndMethod(rawTitle);
+        const inferred = inferCategoryAndMethod(rawTitle);
+
+        const finalMethod = explicitMethod ?? inferred.method;
+        const finalNote = explicitNote ?? inferred.note;
 
         expenses.push({
           id: `parsed-${Date.now()}-${i}`,
           title,
           amount,
           currency: 'ARS',
-          category,
-          method,
+          category: inferred.category,
+          method: finalMethod,
           date: todayStr,
           isConfirmed: true,
           source: 'KEEP_BATCH',
-          ...(note ? { note } : {}),
+          ...(finalNote ? { note: finalNote } : {}),
         });
       }
     }
@@ -84,7 +124,7 @@ export function inferCategoryAndMethod(title: string): {
     };
   }
 
-  // 2. Frescos & Panadería (Carnicería, Verdulería, Fiambrería, Dietética, Panadería, Pastas)
+  // 2. Frescos & Panadería
   if (
     t.includes('carniceria') ||
     t.includes('carnicería') ||
@@ -201,16 +241,7 @@ export function inferCategoryAndMethod(title: string): {
     };
   }
 
-  // 7. Resúmenes Tarjeta
-  if (t.includes('tarjeta') || t.includes('visa') || t.includes('master') || t.includes('amex')) {
-    return {
-      category: 'Resúmenes Tarjeta',
-      method: 'CREDITO',
-      note: 'Resumen tarjeta de crédito',
-    };
-  }
-
-  // 8. Default: Cuidado & Varios
+  // 7. Default: Cuidado & Varios
   return {
     category: 'Cuidado & Varios',
     method: 'EFECTIVO',

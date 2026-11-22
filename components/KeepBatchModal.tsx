@@ -11,76 +11,13 @@ interface KeepBatchModalProps {
   onImportExpenses: (expenses: Expense[]) => void;
 }
 
-const SAMPLE_KEEP_NOTES = `Chino 19510
-Cabify 18940
-Comida al peso 14520
-Comida 26000
-farmacia 9700
-Verdulería 13000
-carniceria 35881
-Carrefour 10000
-Big pizza 23500
-perfumes 30000
-Sahumerios 6378
-Transporte 500
-Expensas 256456
-Comida 8000
-Verdulería 1500
-Sindicato 2000
-Chino 2200
-Dietetica 60000
-Carniceria 22381
-Panadería 1000
-Chino 4200
-Chino 1100
-Pastas 36500
-Panadería 1200
-Carniceria 24653
-Sándwich 5000
-Uber 5100
-Uber 4500
-Fiambrería 11440
-Tarjeta 0,99 dol
-Tarjeta visa 202399
-Tarjeta Amex 172
-Personal 71000
-Panadería 4000
-Panadería 1200
-Cerámica 4200
-Chino 900
-Chino 3900
-Suplemento dietario 10850
-Hospital británico 35096
-Chino 15152
-Chino 2600
-Chino 1100
-Empanadas 19200
-Kfc 12000
-Carrefour 8180
-Arreglo termotanque 140000
-Cumple tizi 19400
-Sube 900
-Carrefour 3600
-panaderia 500
-panaderia 2250
-comida 5000
-Chino 3600
-supermercado 10000
-Verdulería 1800
-Panadería 700
-Comida 6160
-Donación 5000
-Día 22100
-Chino 7000
-Verdulería 2500
-Verdulería 970
-Verdulería 3000
-Big Pons 23200
-Farmacia 50770
-Chino 5800
-Coto 11086
-Día 12306
-Panadería 700`;
+const SAMPLE_NOTES = `Chino 19510 efectivo
+Cabify 18940 mp
+Comida al peso 14520 efectivo
+Farmacia 9700 cuenta
+Verdulería 13000 efectivo
+Carrefour 10000 ripio
+Big Pons 23200 credito`;
 
 export function KeepBatchModal({ isOpen, onClose, onImportExpenses }: KeepBatchModalProps) {
   const [text, setText] = useState('');
@@ -101,7 +38,7 @@ export function KeepBatchModal({ isOpen, onClose, onImportExpenses }: KeepBatchM
   };
 
   const handleLoadSample = () => {
-    handleTextChange(SAMPLE_KEEP_NOTES, batchDate);
+    handleTextChange(SAMPLE_NOTES, batchDate);
   };
 
   const handleImport = () => {
@@ -129,7 +66,7 @@ export function KeepBatchModal({ isOpen, onClose, onImportExpenses }: KeepBatchM
         <div className="bg-[#FFE500] border-b-[3.5px] border-black px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <ClipboardList className="w-5 h-5 text-black" />
-            <h3 className="font-black text-base uppercase tracking-tight">PEGAR LOTE DESDE GOOGLE KEEP</h3>
+            <h3 className="font-black text-base uppercase tracking-tight">CARGA MASIVA DE GASTOS</h3>
           </div>
           <button
             onClick={onClose}
@@ -143,7 +80,7 @@ export function KeepBatchModal({ isOpen, onClose, onImportExpenses }: KeepBatchM
         <div className="p-4 overflow-y-auto space-y-4">
           <div className="flex items-center justify-between flex-wrap gap-2">
             <p className="text-xs font-bold text-slate-700">
-              Pegá el texto tal cual lo anotás en tu Keep o bloc de notas (una línea por gasto):
+              Pegá una lista de gastos (una línea por gasto, opcionalmente aclarando el método):
             </p>
             <div className="flex items-center gap-2">
               <label className="text-[11px] font-black uppercase text-slate-700">Fecha del lote:</label>

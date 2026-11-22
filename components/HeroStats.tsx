@@ -131,7 +131,7 @@ export function HeroStats({
       <div className="bg-[#FFF9D2] border-[2.5px] border-black rounded-xl p-4 space-y-2.5 shadow-[3px_3px_0px_#000]">
         <div className="flex items-center justify-between text-xs sm:text-sm font-black flex-wrap gap-2">
           <span className="text-slate-900">
-            💼 {monthLabel.toLowerCase().includes('histórico') ? 'INGRESOS TOTALES' : 'INGRESOS DEL MES'} {formatARS(salaryARS)} ({salaryPct}% GASTADO)
+            📊 CONSUMO: {salaryPct}% DE LOS INGRESOS
           </span>
           <span className={`px-2.5 py-0.5 rounded border border-black shadow-[1px_1px_0px_#000] font-black ${
             isOverBudget ? 'bg-[#FF5376] text-white' : 'bg-[#22C55E] text-black'
