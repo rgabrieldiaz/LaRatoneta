@@ -1,4 +1,5 @@
 import { FALLBACK_DOLAR_MEP } from './dolarApi';
+import { generateInstallmentExpenses } from './dateUtils';
 import { Category, Expense, MerchantRulesMap, PaymentMethod } from './types';
 
 const GENERIC_WORDS = new Set([
@@ -155,8 +156,15 @@ export function parseRawKeepText(
     const { cleanedText, explicitMethod, explicitNote } = extractExplicitMethod(rawLine);
     const { cleaned: noNoise, isUSD } = cleanSpokenNoise(cleanedText);
 
-    // Find the amount anywhere in the sentence (e.g. "20000", "20.000", "0,99", "0.99")
-    const numMatch = noNoise.match(/(?:^|\s)([\d]+(?:[\.,]\d{3})*(?:,\d{1,2})?|\d+(?:[.,]\d+)?)(?=\s|$)/);
+    const isRefund =
+      /\b(?:reintegro|reintegros|devoluci[oó]n|devoluciones|reembolso|reembolsos|cashback)\b/i.test(rawLine) ||
+      /(?:^|\s)-\s*[\d]/.test(rawLine);
+
+    const instMatch = !isRefund ? rawLine.match(/\b(\d{1,2})\s*(?:cuotas?|ctas?)\b/i) : null;
+    const installmentCount = instMatch ? Math.min(24, Math.max(1, parseInt(instMatch[1], 10))) : 1;
+
+    // Find the amount anywhere in the sentence (e.g. "20000", "20.000", "0,99", "0.99", "-5000")
+    const numMatch = noNoise.match(/(?:^|\s)-?([\d]+(?:[\.,]\d{3})*(?:,\d{1,2})?|\d+(?:[.,]\d+)?)(?=\s|$)/);
     if (!numMatch) continue;
 
     const rawAmountStr = numMatch[1];
@@ -164,37 +172,67 @@ export function parseRawKeepText(
 
     if (isNaN(parsedNumber) || parsedNumber <= 0) continue;
 
-    const amount = isUSD ? Math.round(parsedNumber * dolarMepRate) : parsedNumber;
+    const baseAmount = isUSD ? Math.round(parsedNumber * dolarMepRate) : parsedNumber;
+    const amount = isRefund ? -Math.abs(baseAmount) : baseAmount;
 
     const rawTitle = noNoise
       .replace(numMatch[0], ' ')
+      .replace(/\b(?:reintegro|reintegros|devoluci[oó]n|devoluciones|reembolso|reembolsos|cashback)\b/gi, ' ')
+      .replace(/\b\d{1,2}\s*(?:cuotas?|ctas?)\b/gi, ' ')
       .replace(/\s+/g, ' ')
       .trim();
 
-    if (!rawTitle) continue;
-
-    const title = rawTitle.charAt(0).toUpperCase() + rawTitle.slice(1);
+    let title: string;
+    if (!rawTitle) {
+      title = 'Reintegro';
+    } else if (isRefund) {
+      title = `Reintegro ${rawTitle.charAt(0).toUpperCase() + rawTitle.slice(1)}`;
+    } else {
+      title = rawTitle.charAt(0).toUpperCase() + rawTitle.slice(1);
+    }
     const inferred = inferCategoryAndMethod(rawTitle, customRules);
 
-    const finalMethod = explicitMethod ?? inferred.method;
+    // If installments are specified, method defaults to CREDITO
+    const finalMethod = installmentCount > 1
+      ? (explicitMethod && explicitMethod !== 'EFECTIVO' ? explicitMethod : 'CREDITO')
+      : (explicitMethod ?? inferred.method);
     const baseNote = explicitMethod ? explicitNote : inferred.note;
     const usdNote = isUSD
       ? `🇺🇸 U$S ${parsedNumber.toFixed(2)} (Dólar MEP $${Math.round(dolarMepRate).toLocaleString('es-AR')})`
       : undefined;
     const finalNote = [usdNote, baseNote].filter(Boolean).join(' • ') || undefined;
 
-    expenses.push({
-      id: `parsed-${Date.now()}-${i}`,
-      title,
-      amount,
-      currency: 'ARS',
-      category: inferred.category,
-      method: finalMethod,
-      date: todayStr,
-      isConfirmed: true,
-      source: 'KEEP_BATCH',
-      ...(finalNote ? { note: finalNote } : {}),
-    });
+    if (installmentCount > 1) {
+      const generated = generateInstallmentExpenses(
+        {
+          title,
+          amount,
+          currency: 'ARS',
+          category: inferred.category,
+          method: finalMethod,
+          date: todayStr,
+          isConfirmed: true,
+          source: 'KEEP_BATCH',
+          ...(finalNote ? { note: finalNote } : {}),
+        },
+        installmentCount
+      );
+      expenses.push(...generated);
+    } else {
+      expenses.push({
+        id: `parsed-${Date.now()}-${i}`,
+        title,
+        amount,
+        currency: 'ARS',
+        category: inferred.category,
+        method: finalMethod,
+        date: todayStr,
+        isConfirmed: true,
+        source: 'KEEP_BATCH',
+        ...(isRefund ? { isRefund: true } : {}),
+        ...(finalNote ? { note: finalNote } : {}),
+      });
+    }
   }
 
   return expenses;

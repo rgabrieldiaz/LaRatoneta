@@ -61,6 +61,12 @@ export function ExpenseList({ expenses, onDeleteExpense, onUpdateExpense }: Expe
       }
       // Category / Method filter
       if (filterCategory !== 'ALL') {
+        if (filterCategory === 'REFUNDS') {
+          return e.amount < 0 || e.isRefund;
+        }
+        if (filterCategory === 'INSTALLMENTS') {
+          return Boolean(e.installments && e.installments.total > 1);
+        }
         if (filterCategory === 'EFECTIVO' && e.method !== 'EFECTIVO') return false;
         if (filterCategory === 'CUENTA' && e.method !== 'CUENTA') return false;
         if (filterCategory === 'CREDITO' && e.method !== 'CREDITO') return false;
@@ -236,6 +242,8 @@ export function ExpenseList({ expenses, onDeleteExpense, onUpdateExpense }: Expe
         <div className="h-6 w-[2px] bg-black/40 mx-1 shrink-0" />
 
         {[
+          { label: '💸 Reintegros', val: 'REFUNDS' },
+          { label: '💳 En Cuotas', val: 'INSTALLMENTS' },
           { label: '💵 Efectivo', val: 'EFECTIVO' },
           { label: '⚡ En Cuenta', val: 'CUENTA' },
           { label: '💳 Crédito', val: 'CREDITO' },
@@ -282,6 +290,16 @@ export function ExpenseList({ expenses, onDeleteExpense, onUpdateExpense }: Expe
                     <span className="font-black text-base sm:text-lg text-black truncate leading-tight">
                       {item.title}
                     </span>
+                    {(item.amount < 0 || item.isRefund) && (
+                      <span className="px-1.5 py-0.5 rounded text-[10px] font-black uppercase bg-emerald-100 text-emerald-800 border border-emerald-500 shrink-0">
+                        💸 Reintegro
+                      </span>
+                    )}
+                    {item.installments && (
+                      <span className="px-1.5 py-0.5 rounded text-[10px] font-black uppercase bg-purple-100 text-purple-900 border border-purple-400 shrink-0">
+                        💳 Cuota {item.installments.current}/{item.installments.total}
+                      </span>
+                    )}
                     {getMethodBadge(item.method, item.currency)}
                   </div>
                   <div className="flex items-center gap-2 text-xs sm:text-sm font-bold text-slate-600 flex-wrap">
@@ -301,9 +319,17 @@ export function ExpenseList({ expenses, onDeleteExpense, onUpdateExpense }: Expe
               {/* Right: Amount, Edit & Delete */}
               <div className="flex items-center gap-2 sm:gap-3 shrink-0">
                 <div className="text-right mr-1">
-                  <span className="font-black text-lg sm:text-2xl text-black block leading-tight">
+                  <span
+                    className={`font-black text-lg sm:text-2xl block leading-tight ${
+                      item.amount < 0 || item.isRefund ? 'text-emerald-600' : 'text-black'
+                    }`}
+                  >
                     {item.currency === 'USD'
-                      ? `U$S ${item.amount.toFixed(2)}`
+                      ? item.amount < 0 || item.isRefund
+                        ? `+U$S ${Math.abs(item.amount).toFixed(2)}`
+                        : `U$S ${item.amount.toFixed(2)}`
+                      : item.amount < 0 || item.isRefund
+                      ? `+$${Math.abs(item.amount).toLocaleString('es-AR')}`
                       : `-$${item.amount.toLocaleString('es-AR')}`}
                   </span>
                   <span className="text-xs font-black text-slate-500 uppercase">{item.currency}</span>
@@ -375,15 +401,47 @@ export function ExpenseList({ expenses, onDeleteExpense, onUpdateExpense }: Expe
             <form
               onSubmit={(e) => {
                 e.preventDefault();
-                if (!editingExpense.title.trim() || editingExpense.amount <= 0) {
+                const absAmount = Math.abs(editingExpense.amount);
+                if (!editingExpense.title.trim() || absAmount <= 0) {
                   alert('Ingresá un concepto y monto válido.');
                   return;
                 }
-                onUpdateExpense(editingExpense);
+                const isRefund = Boolean(editingExpense.isRefund);
+                const finalAmount = isRefund ? -absAmount : absAmount;
+                onUpdateExpense({
+                  ...editingExpense,
+                  amount: finalAmount,
+                  isRefund: isRefund ? true : undefined,
+                });
                 setEditingExpense(null);
               }}
               className="p-5 space-y-4"
             >
+              {/* Type Switcher */}
+              <div className="flex items-center gap-2 pb-1 border-b border-slate-200">
+                <span className="text-xs font-black uppercase text-slate-700">Tipo:</span>
+                <div className="inline-flex rounded-lg border-[2px] border-black overflow-hidden shadow-[2px_2px_0px_#000]">
+                  <button
+                    type="button"
+                    onClick={() => setEditingExpense({ ...editingExpense, isRefund: false })}
+                    className={`px-3 py-1 text-xs font-black transition-colors ${
+                      !editingExpense.isRefund ? 'bg-[#FF5376] text-white' : 'bg-white text-slate-700 hover:bg-slate-100'
+                    }`}
+                  >
+                    🔴 Gasto Normal
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEditingExpense({ ...editingExpense, isRefund: true })}
+                    className={`px-3 py-1 text-xs font-black border-l-[2px] border-black transition-colors ${
+                      editingExpense.isRefund ? 'bg-[#10B981] text-white' : 'bg-white text-slate-700 hover:bg-slate-100'
+                    }`}
+                  >
+                    💸 Reintegro / Devolución
+                  </button>
+                </div>
+              </div>
+
               <div>
                 <label className="block text-xs font-black uppercase text-slate-700 mb-1">
                   Concepto
@@ -400,17 +458,17 @@ export function ExpenseList({ expenses, onDeleteExpense, onUpdateExpense }: Expe
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-black uppercase text-slate-700 mb-1">
-                    Monto ($ ARS)
+                    Monto ({editingExpense.isRefund ? 'Reintegro +$' : 'Gasto -$'})
                   </label>
                   <input
                     type="number"
                     step="1"
                     min="1"
-                    value={editingExpense.amount}
+                    value={Math.abs(editingExpense.amount) || ''}
                     onChange={(e) =>
                       setEditingExpense({
                         ...editingExpense,
-                        amount: parseFloat(e.target.value) || 0,
+                        amount: Math.abs(parseFloat(e.target.value) || 0),
                       })
                     }
                     className="w-full h-11 px-3 bg-[#F8F8F8] border-[2.5px] border-black rounded-lg text-base font-black focus:outline-none focus:bg-white"

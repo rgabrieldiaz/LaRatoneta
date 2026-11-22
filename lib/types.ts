@@ -16,6 +16,12 @@ export type Category =
   | 'Cuidado & Varios'
   | 'Resúmenes Tarjeta';
 
+export interface ExpenseInstallments {
+  current: number;
+  total: number;
+  parentId?: string;
+}
+
 export interface Expense {
   id: string;
   title: string;
@@ -27,6 +33,22 @@ export interface Expense {
   isConfirmed: boolean;
   source: 'MANUAL' | 'KEEP_BATCH' | 'NOTIFICATION' | 'EMAIL';
   note?: string;
+  isRefund?: boolean;
+  installments?: ExpenseInstallments;
+}
+
+export interface FixedService {
+  id: string;
+  name: string;
+  category: Category;
+  defaultMethod?: PaymentMethod;
+  keywords: string[];
+  active: boolean;
+}
+
+export interface FixedServicesConfig {
+  services: FixedService[];
+  updatedAt?: string;
 }
 
 export type IncomeType = 'SUELDO' | 'JUBILACION' | 'PENSION' | 'OTRO';

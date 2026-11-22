@@ -14,8 +14,12 @@ import { WebhookSettingsModal } from '../components/WebhookSettingsModal';
 import { PrivateGate } from '../components/PrivateGate';
 import { SalaryModal } from '../components/SalaryModal';
 import { CategoryBudgetsModal } from '../components/CategoryBudgetsModal';
+import { MonthComparisonModal } from '../components/MonthComparisonModal';
+import { ReconciliationModal } from '../components/ReconciliationModal';
+import { FixedServicesChecklist } from '../components/FixedServicesChecklist';
 import { INITIAL_EXPENSES } from '../lib/initialData';
-import { CategoryBudgets, Expense, IncomeEntry, MerchantRulesMap, SalaryConfig } from '../lib/types';
+import { DEFAULT_FIXED_SERVICES } from '../lib/fixedServices';
+import { CategoryBudgets, Expense, FixedService, IncomeEntry, MerchantRulesMap, SalaryConfig } from '../lib/types';
 import { normalizeMerchantKey } from '../lib/keepParser';
 import {
   getSalaryForMonth,
@@ -48,6 +52,8 @@ import {
   saveCategoryBudgetsToFirestore,
   subscribeToMerchantRules,
   saveMerchantRuleToFirestore,
+  subscribeToFixedServices,
+  saveFixedServicesToFirestore,
   DEFAULT_SALARY_CONFIG,
   PRIMARY_LEDGER_ID,
   AUTHORIZED_EMAILS
@@ -62,10 +68,13 @@ export default function Home() {
   const [isBatchModalOpen, setIsBatchModalOpen] = useState(false);
   const [isIntegrationsOpen, setIsIntegrationsOpen] = useState(false);
   const [isSalaryModalOpen, setIsSalaryModalOpen] = useState(false);
+  const [isCompareModalOpen, setIsCompareModalOpen] = useState(false);
+  const [isReconciliationOpen, setIsReconciliationOpen] = useState(false);
   const [salaryConfig, setSalaryConfig] = useState<SalaryConfig>(DEFAULT_SALARY_CONFIG);
   const [isBudgetsModalOpen, setIsBudgetsModalOpen] = useState(false);
   const [categoryBudgets, setCategoryBudgets] = useState<CategoryBudgets>({});
   const [merchantRules, setMerchantRules] = useState<MerchantRulesMap>({});
+  const [fixedServices, setFixedServices] = useState<FixedService[]>(DEFAULT_FIXED_SERVICES);
   const [budgetAlertToast, setBudgetAlertToast] = useState<{ message: string; isOver: boolean } | null>(null);
   const [lastDeleted, setLastDeleted] = useState<{ expense: Expense; secondsLeft: number } | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
@@ -153,10 +162,16 @@ export default function Home() {
       const unsubMerchantRules = subscribeToMerchantRules(PRIMARY_LEDGER_ID, (rules) => {
         setMerchantRules(rules || {});
       });
+      const unsubFixedServices = subscribeToFixedServices(PRIMARY_LEDGER_ID, (services) => {
+        if (services && services.length > 0) {
+          setFixedServices(services);
+        }
+      });
       return () => {
         unsubSalary();
         unsubBudgets();
         unsubMerchantRules();
+        unsubFixedServices();
       };
     }
   }, [user, isAuthorized]);
@@ -209,43 +224,52 @@ export default function Home() {
   };
 
   // Handlers for Expenses
-  const handleAddExpense = async (expense: Expense) => {
-    // Check if this expense crosses 80% or 100% of a configured category budget
-    const limit = categoryBudgets[expense.category];
-    if (limit && limit > 0 && expense.currency === 'ARS') {
-      const expMonth = expense.date.slice(0, 7);
-      const prevTotal = expenses
-        .filter(
-          (e) =>
-            e.currency === 'ARS' &&
-            e.category === expense.category &&
-            e.date.startsWith(expMonth)
-        )
-        .reduce((sum, e) => sum + e.amount, 0);
-      const nextTotal = prevTotal + expense.amount;
+  const handleAddExpense = async (expenseOrList: Expense | Expense[]) => {
+    const items = Array.isArray(expenseOrList) ? expenseOrList : [expenseOrList];
+    if (items.length === 0) return;
 
-      if (prevTotal < limit && nextTotal >= limit) {
-        setBudgetAlertToast({
-          isOver: true,
-          message: `🚨 ${expense.category} superó su tope ($${nextTotal.toLocaleString('es-AR')} / $${limit.toLocaleString('es-AR')})`,
-        });
-      } else if (prevTotal < limit * 0.8 && nextTotal >= limit * 0.8) {
-        const pct = Math.round((nextTotal / limit) * 100);
-        setBudgetAlertToast({
-          isOver: false,
-          message: `⚠️ ${expense.category} llegó al ${pct}% de su tope ($${nextTotal.toLocaleString('es-AR')} / $${limit.toLocaleString('es-AR')})`,
-        });
+    // Check if any expense crosses 80% or 100% of a configured category budget
+    for (const expense of items) {
+      const limit = categoryBudgets[expense.category];
+      if (limit && limit > 0 && expense.currency === 'ARS') {
+        const expMonth = expense.date.slice(0, 7);
+        const prevTotal = expenses
+          .filter(
+            (e) =>
+              e.currency === 'ARS' &&
+              e.category === expense.category &&
+              e.date.startsWith(expMonth)
+          )
+          .reduce((sum, e) => sum + e.amount, 0);
+        const nextTotal = prevTotal + expense.amount;
+
+        if (prevTotal < limit && nextTotal >= limit) {
+          setBudgetAlertToast({
+            isOver: true,
+            message: `🚨 ${expense.category} superó su tope ($${nextTotal.toLocaleString('es-AR')} / $${limit.toLocaleString('es-AR')})`,
+          });
+        } else if (prevTotal < limit * 0.8 && nextTotal >= limit * 0.8) {
+          const pct = Math.round((nextTotal / limit) * 100);
+          setBudgetAlertToast({
+            isOver: false,
+            message: `⚠️ ${expense.category} llegó al ${pct}% de su tope ($${nextTotal.toLocaleString('es-AR')} / $${limit.toLocaleString('es-AR')})`,
+          });
+        }
       }
     }
 
     if (user && isFirebaseConfigured) {
       try {
-        await saveExpenseToFirestore(PRIMARY_LEDGER_ID, expense);
+        if (items.length === 1) {
+          await saveExpenseToFirestore(PRIMARY_LEDGER_ID, items[0]);
+        } else {
+          await bulkImportToFirestore(PRIMARY_LEDGER_ID, items);
+        }
       } catch (e) {
         console.error('Error saving to Firestore:', e);
       }
     } else {
-      setExpenses(prev => [expense, ...prev]);
+      setExpenses((prev) => [...items, ...prev]);
     }
   };
 
@@ -256,6 +280,17 @@ export default function Home() {
         await saveCategoryBudgetsToFirestore(PRIMARY_LEDGER_ID, budgets);
       } catch (e) {
         console.error('Error saving category budgets to Firestore:', e);
+      }
+    }
+  };
+
+  const handleSaveFixedServices = async (services: FixedService[]) => {
+    setFixedServices(services);
+    if (user && isFirebaseConfigured) {
+      try {
+        await saveFixedServicesToFirestore(PRIMARY_LEDGER_ID, services);
+      } catch (e) {
+        console.error('Error saving fixed services to Firestore:', e);
       }
     }
   };
@@ -532,12 +567,14 @@ export default function Home() {
           availableMonths={availableMonths}
           onSelectMonth={setSelectedMonthKey}
           monthlyCount={monthlyExpenses.length}
+          onOpenCompareModal={() => setIsCompareModalOpen(true)}
         />
 
         {/* Primary Action: Add Expense (Quick or Manual) right at the top */}
         <QuickInput
           onAddExpense={handleAddExpense}
           onOpenBatchModal={() => setIsBatchModalOpen(true)}
+          onOpenReconciliation={() => setIsReconciliationOpen(true)}
           merchantRules={merchantRules}
         />
 
@@ -547,6 +584,17 @@ export default function Home() {
           monthLabel={selectedMonthLabel}
           salaryARS={activeSalary}
           onOpenSalaryModal={() => setIsSalaryModalOpen(true)}
+        />
+
+        {/* Monthly Fixed Services (Utilities & Bills) Checklist */}
+        <FixedServicesChecklist
+          expenses={monthlyExpenses}
+          monthLabel={selectedMonthLabel}
+          fixedServices={fixedServices}
+          onSaveServices={handleSaveFixedServices}
+          onSelectServiceToPay={(service) => {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
         />
 
         {/* Category Donut / Pie Chart with Percentages & Legend */}
@@ -598,6 +646,25 @@ export default function Home() {
         categoryBudgets={categoryBudgets}
         onSaveBudgets={handleSaveBudgets}
         monthLabel={selectedMonthLabel}
+      />
+
+      {/* Month-over-Month Comparison Modal */}
+      <MonthComparisonModal
+        isOpen={isCompareModalOpen}
+        onClose={() => setIsCompareModalOpen(false)}
+        expenses={expenses}
+        availableMonths={availableMonths}
+        initialMonthKey={selectedMonthKey}
+      />
+
+      {/* Statement Reconciliation Modal */}
+      <ReconciliationModal
+        isOpen={isReconciliationOpen}
+        onClose={() => setIsReconciliationOpen(false)}
+        expenses={expenses}
+        selectedMonthKey={selectedMonthKey}
+        onImportExpenses={handleImportExpenses}
+        merchantRules={merchantRules}
       />
 
       {/* Non-invasive 4-second Category Budget Threshold Toast */}

@@ -23,7 +23,7 @@ import {
   getDocs,
   Firestore 
 } from 'firebase/firestore';
-import { CategoryBudgets, Expense, MerchantRule, MerchantRulesMap, SalaryConfig } from './types';
+import { CategoryBudgets, Expense, FixedService, MerchantRule, MerchantRulesMap, SalaryConfig } from './types';
 import { INITIAL_EXPENSES } from './initialData';
 
 const firebaseConfig = {
@@ -368,4 +368,43 @@ export async function saveMerchantRuleToFirestore(
     },
     { merge: true }
   );
+}
+
+/**
+ * Monthly Fixed Services Checklist
+ */
+export function subscribeToFixedServices(
+  userId: string,
+  callback: (services: FixedService[] | null) => void
+) {
+  if (!db) {
+    callback(null);
+    return () => {};
+  }
+
+  const docRef = doc(db, 'users', userId, 'settings', 'fixed_services');
+  return onSnapshot(
+    docRef,
+    (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        callback((data?.services || []) as FixedService[]);
+      } else {
+        callback(null);
+      }
+    },
+    (error) => {
+      console.error('Firestore fixed_services snapshot error:', error);
+      callback(null);
+    }
+  );
+}
+
+export async function saveFixedServicesToFirestore(
+  userId: string,
+  services: FixedService[]
+): Promise<void> {
+  if (!db) return;
+  const docRef = doc(db, 'users', userId, 'settings', 'fixed_services');
+  await setDoc(docRef, { services, updatedAt: new Date().toISOString() });
 }

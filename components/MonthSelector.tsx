@@ -9,6 +9,7 @@ interface MonthSelectorProps {
   availableMonths: string[];
   onSelectMonth: (monthKey: string) => void;
   monthlyCount: number;
+  onOpenCompareModal?: () => void;
 }
 
 export function MonthSelector({
@@ -16,6 +17,7 @@ export function MonthSelector({
   availableMonths,
   onSelectMonth,
   monthlyCount,
+  onOpenCompareModal,
 }: MonthSelectorProps) {
   const currentIndex = availableMonths.indexOf(currentMonthKey);
 
@@ -74,8 +76,20 @@ export function MonthSelector({
         </button>
       </div>
 
-      {/* Info Badge */}
-      <div className="flex items-center gap-2.5">
+      {/* Info Badge & Compare Button */}
+      <div className="flex items-center gap-2.5 flex-wrap">
+        {onOpenCompareModal && (
+          <button
+            type="button"
+            onClick={onOpenCompareModal}
+            className="px-3 py-1.5 bg-white hover:bg-[#FFE500] border-[2px] border-black rounded-lg text-xs sm:text-sm font-black text-black flex items-center gap-1.5 shadow-[2px_2px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all"
+            title="Comparar evolución de gastos contra otros meses"
+          >
+            <span>📊</span>
+            <span>Comparar</span>
+          </button>
+        )}
+
         <span className="bg-[#22C55E] text-black border border-black font-black text-xs sm:text-sm px-3 py-1.5 rounded-lg shadow-[1px_1px_0px_#000]">
           {monthlyCount} {monthlyCount === 1 ? 'gasto' : 'gastos'}
         </span>

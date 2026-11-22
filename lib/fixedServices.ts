@@ -1,0 +1,68 @@
+import { FixedService } from './types';
+
+export const DEFAULT_FIXED_SERVICES: FixedService[] = [
+  {
+    id: 'expensas',
+    name: 'Expensas',
+    category: 'Hogar & Servicios',
+    defaultMethod: 'CUENTA',
+    keywords: ['expensa', 'expensas'],
+    active: true,
+  },
+  {
+    id: 'luz',
+    name: 'Luz (Edesur / Edenor)',
+    category: 'Hogar & Servicios',
+    defaultMethod: 'CUENTA',
+    keywords: ['luz', 'edesur', 'edenor'],
+    active: true,
+  },
+  {
+    id: 'gas',
+    name: 'Gas (Metrogas)',
+    category: 'Hogar & Servicios',
+    defaultMethod: 'CUENTA',
+    keywords: ['gas', 'metrogas', 'naturgy'],
+    active: true,
+  },
+  {
+    id: 'agua',
+    name: 'Agua (AySA)',
+    category: 'Hogar & Servicios',
+    defaultMethod: 'CUENTA',
+    keywords: ['agua', 'aysa'],
+    active: true,
+  },
+  {
+    id: 'internet',
+    name: 'Internet / Flow',
+    category: 'Hogar & Servicios',
+    defaultMethod: 'CUENTA',
+    keywords: ['internet', 'flow', 'personal flow', 'telecentro', 'wifi', 'fibertel'],
+    active: true,
+  },
+  {
+    id: 'celular',
+    name: 'Celular / Abono',
+    category: 'Hogar & Servicios',
+    defaultMethod: 'CUENTA',
+    keywords: ['celular', 'abono', 'personal celular', 'movistar', 'claro'],
+    active: true,
+  },
+  {
+    id: 'abl',
+    name: 'ABL / Impuesto Inmobiliario',
+    category: 'Hogar & Servicios',
+    defaultMethod: 'CUENTA',
+    keywords: ['abl', 'inmobiliario', 'rentas'],
+    active: false,
+  },
+  {
+    id: 'alquiler',
+    name: 'Alquiler',
+    category: 'Hogar & Servicios',
+    defaultMethod: 'CUENTA',
+    keywords: ['alquiler'],
+    active: false,
+  },
+];

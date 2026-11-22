@@ -67,14 +67,14 @@ Apple Pay captura pagos apoyando el iPhone en el posnet, pero **no cubre** pagos
 
 ### 🔹 Fase 3 — Control de Servicios Fijos, Cuotas, Reintegros y Aprendizaje
 * [x] **PWA real para iPhone:** `manifest.json`, `apple-touch-icon.png` (180x180) y modo pantalla completa sin barra de Safari.
-* [ ] **Reintegros y gastos compartidos:** Poder registrar un reintegro (MODO/Personal Pay) o devolución de una salida para que reste directo del gasto/categoría sin ensuciar los ingresos.
+* [x] **Reintegros y gastos compartidos:** Poder registrar un reintegro (MODO/Personal Pay) o devolución de una salida para que reste directo del gasto/categoría sin ensuciar los ingresos.
 * [x] **Aprendizaje de comercios:** Si el usuario corrige la categoría de un comercio nuevo (ej. `"Lo de Pepe"`), recordarlo para futuras cargas automáticas o por voz.
 * [x] **Topes / alertas por categoría:** Fijar un límite mensual por rubro (ej. avisar si *Comida & Salidas* supera cierto monto), con referencia del gasto actual del mes y avisos suaves al 80% y 100%.
 * [x] **"Deshacer" al borrar:** Aviso temporal de 5 segundos tras eliminar un gasto para evitar errores de dedo en el celular. (Más rate limiting en `/api/webhook`).
-* [ ] **Checklist de Gastos Fijos mensuales:** Recordatorio visual para verificar si en el mes ya se cargaron Expensas, Luz, Gas, Agua e Internet (detectando rápido si faltó anotar algún servicio).
-* [ ] **Cuotas de Tarjeta de Crédito:** Soporte para compras en cuotas (ej. 3/6/12 cuotas) que proyecte automáticamente la cuota correspondiente en los meses siguientes.
-* [ ] **Comparativa mes a mes:** Vista simple de evolución mensual (ej. Noviembre vs. Diciembre) por total gastado y por categoría cuando haya 2+ meses cargados.
-* [ ] **Conciliación asistida de resúmenes:** Flujo cómodo para pegar o subir el detalle de un resumen o billetera y corregir fechas/montos faltantes.
+* [x] **Checklist de Gastos Fijos mensuales:** Recordatorio visual para verificar si en el mes ya se cargaron Expensas, Luz, Gas, Agua e Internet (detectando rápido si faltó anotar algún servicio).
+* [x] **Cuotas de Tarjeta de Crédito:** Soporte para compras en cuotas (ej. 3/6/12 cuotas) que proyecte automáticamente la cuota correspondiente en los meses siguientes.
+* [x] **Comparativa mes a mes:** Vista simple de evolución mensual (ej. Noviembre vs. Diciembre) por total gastado y por categoría cuando haya 2+ meses cargados.
+* [x] **Conciliación asistida de resúmenes:** Flujo cómodo para pegar o subir el detalle de un resumen o billetera y corregir fechas/montos faltantes.
 
 ---
 

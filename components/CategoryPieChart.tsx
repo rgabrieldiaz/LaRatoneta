@@ -72,12 +72,13 @@ export function CategoryPieChart({
         category: cat as Category,
         amount: data.amount,
         count: data.count,
-        percentage: total > 0 ? (data.amount / total) * 100 : 0,
+        percentage: total > 0 ? Math.max(0, (data.amount / total) * 100) : 0,
         color: CATEGORY_COLORS[cat] || '#CBD5E1',
       }))
       .sort((a, b) => b.amount - a.amount);
 
-    // Compute SVG Donut arc paths
+    // Compute SVG Donut arc paths using positive amounts for geometry
+    const positiveTotal = sortedEntries.reduce((sum, e) => sum + Math.max(0, e.amount), 0);
     const cx = 110;
     const cy = 110;
     const outerR = 95;
@@ -85,10 +86,23 @@ export function CategoryPieChart({
     let currentAngle = -Math.PI / 2; // Start from top (-90 degrees)
 
     const computedSlices: CategorySlice[] = sortedEntries.map((item) => {
-      const sliceAngle = (item.amount / (total || 1)) * (2 * Math.PI);
+      const sliceAmount = Math.max(0, item.amount);
+      const sliceAngle = positiveTotal > 0 ? (sliceAmount / positiveTotal) * (2 * Math.PI) : 0;
       const startAngle = currentAngle;
       const endAngle = currentAngle + sliceAngle;
-      currentAngle = endAngle;
+      if (sliceAmount > 0) {
+        currentAngle = endAngle;
+      }
+
+      // Handle zero or negative slice
+      if (sliceAmount <= 0) {
+        return {
+          ...item,
+          startAngle: 0,
+          endAngle: 0,
+          pathData: '',
+        };
+      }
 
       // Handle single-item edge case (full circle)
       const isFullCircle = sliceAngle >= 2 * Math.PI - 0.001;
