@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { User } from 'firebase/auth';
-import { ShieldCheck, Lock, LogOut, ArrowRight, Sparkles } from 'lucide-react';
+import { ShieldCheck, Lock, LogOut, ArrowRight } from 'lucide-react';
 
 interface PrivateGateProps {
   user: User | null;
@@ -17,7 +17,6 @@ export function PrivateGate({
   authorizedEmail,
   onLogin,
   onLogout,
-  isConfigured
 }: PrivateGateProps) {
   const isWrongUser = user && user.email?.toLowerCase() !== authorizedEmail.toLowerCase();
 
@@ -42,53 +41,50 @@ export function PrivateGate({
         {/* Title */}
         <div className="space-y-1">
           <span className="text-[11px] font-black uppercase tracking-widest bg-black text-[#FFE500] px-2 py-0.5 rounded">
-            FINANZAS PERSONALES • PRIVADO
+            ACCESO PRIVADO • ENCRIPTADO
           </span>
           <h1 className="text-3xl font-black tracking-tight uppercase text-black pt-2">
             LA RATONETA 🧀
           </h1>
           <p className="text-xs font-bold text-slate-600">
-            Bóveda de Control de Gastos Diarios
+            Control Privado de Gastos Diarios
           </p>
         </div>
 
-        {/* Privacy Explanation */}
+        {/* Privacy Explanation (100% anonymous, no PII leaked) */}
         <div className="bg-[#FFF9D2] border-[2px] border-black p-3.5 rounded-lg text-left space-y-2">
           <div className="flex items-center gap-1.5 font-black text-xs text-black">
             <ShieldCheck className="w-4 h-4 text-[#22C55E]" />
-            <span>ACCESO EXCLUSIVO Y PROTEGIDO</span>
+            <span>BÓVEDA DE ACCESO RESTRINGIDO</span>
           </div>
           <p className="text-xs text-slate-700 leading-relaxed">
-            Para proteger la intimidad financiera de <strong>Gretel</strong>, los gastos de chinos, comidas, tarjetas y expensas están cifrados y solo se muestran tras identificarse con su cuenta de Google.
+            Esta es una aplicación privada para el registro y análisis de consumos personales. Para proteger la intimidad de los datos, el acceso está reservado exclusivamente a la cuenta autorizada.
           </p>
         </div>
 
-        {/* Unauthorized user state */}
+        {/* Unauthorized user state (Never leaks the authorized email!) */}
         {isWrongUser ? (
           <div className="bg-[#FF5376]/10 border-[2px] border-[#FF5376] p-4 rounded-lg space-y-3 text-left">
-            <p className="text-xs font-black text-[#FF5376] uppercase">
-              🚫 Cuenta no autorizada
+            <p className="text-xs font-black text-[#FF5376] uppercase flex items-center gap-1.5">
+              <span>🚫 CUENTA NO AUTORIZADA</span>
             </p>
             <p className="text-xs text-slate-800">
-              Iniciaste sesión como <strong>{user?.email}</strong>. Por seguridad e intimidad, esta app le pertenece exclusivamente a:
+              Iniciaste sesión con <strong className="font-mono">{user?.email}</strong>. Esta cuenta no cuenta con permisos para acceder a esta bóveda.
             </p>
-            <div className="bg-white border border-black px-2.5 py-1 rounded text-xs font-mono font-bold text-black break-all">
-              {authorizedEmail}
-            </div>
             <button
               onClick={onLogout}
               className="brutal-btn w-full bg-[#FF5376] text-white py-2.5 px-4 rounded text-xs font-black flex items-center justify-center gap-2 hover:bg-[#e03a5e]"
             >
               <LogOut className="w-4 h-4" />
-              <span>Cerrar sesión e ingresar con otra cuenta</span>
+              <span>Cerrar sesión e ingresar con la cuenta autorizada</span>
             </button>
           </div>
         ) : (
-          /* Normal Login state */
-          <div className="space-y-4">
+          /* Normal Login state (Zero email exposure) */
+          <div className="space-y-3">
             <button
               onClick={onLogin}
-              className="brutal-btn w-full bg-[#22C55E] text-black py-4 px-5 rounded-xl font-black text-sm uppercase flex items-center justify-center gap-3 hover:bg-[#1eb353] transition-transform active:scale-95"
+              className="brutal-btn w-full bg-[#22C55E] text-black py-4 px-5 rounded-xl font-black text-sm uppercase flex items-center justify-center gap-3 hover:bg-[#1eb353] transition-transform active:scale-95 shadow-[4px_4px_0px_#000]"
             >
               <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24">
                 <path
@@ -108,12 +104,12 @@ export function PrivateGate({
                   d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.24 6.58l4.04 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
                 />
               </svg>
-              <span>Entrar con Google</span>
+              <span>Continuar con Google</span>
               <ArrowRight className="w-4 h-4 ml-auto" />
             </button>
 
-            <p className="text-[11px] font-bold text-slate-500">
-              Autorizado para: <span className="text-black font-mono underline">{authorizedEmail}</span>
+            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+              🔒 Autenticación cifrada vía Google OAuth
             </p>
           </div>
         )}
@@ -130,7 +126,7 @@ export function PrivateGate({
             💵 Efectivo vs Tarjetas
           </div>
           <div className="p-2 bg-slate-50 border border-black rounded text-[10px] font-bold text-slate-700">
-            ☁️ Guardado en Firebase
+            ☁️ Sincronización en Tiempo Real
           </div>
         </div>
 

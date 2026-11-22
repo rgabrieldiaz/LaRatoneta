@@ -193,7 +193,7 @@ export function CategoryPieChart({ expenses, selectedMonthLabel }: CategoryPieCh
               </span>
             </h2>
             <p className="text-xs text-slate-600 font-bold">
-              Distribución porcentual de los gastos de Gretel
+              Distribución porcentual de los consumos del período
             </p>
           </div>
         </div>

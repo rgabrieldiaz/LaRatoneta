@@ -91,7 +91,7 @@ export function Navbar({
               {user.photoURL ? (
                 <img
                   src={user.photoURL}
-                  alt={user.displayName || 'Gretel'}
+                  alt={user.displayName || 'Usuario'}
                   className="w-6 h-6 rounded-full border border-black object-cover"
                 />
               ) : (

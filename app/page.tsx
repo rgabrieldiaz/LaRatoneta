@@ -247,7 +247,7 @@ export default function Home() {
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `la_ratoneta_${selectedMonthKey}_${TARGET_EMAIL}.csv`);
+    link.setAttribute('download', `la_ratoneta_${selectedMonthKey}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
