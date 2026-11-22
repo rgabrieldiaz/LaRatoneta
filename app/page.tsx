@@ -14,8 +14,12 @@ import { IntegrationsDrawer } from '../components/IntegrationsDrawer';
 import { PrivateGate } from '../components/PrivateGate';
 import { SalaryModal } from '../components/SalaryModal';
 import { INITIAL_EXPENSES } from '../lib/initialData';
-import { Expense, SalaryConfig } from '../lib/types';
-import { getSalaryForMonth, buildUpdatedSalaryConfig } from '../lib/salaryUtils';
+import { Expense, IncomeEntry, SalaryConfig } from '../lib/types';
+import {
+  getSalaryForMonth,
+  upsertIncomeInConfig,
+  removeIncomeFromConfig,
+} from '../lib/salaryUtils';
 import { 
   getAvailableMonths, 
   filterExpensesByMonth, 
@@ -248,31 +252,30 @@ export default function Home() {
     }
   };
 
-  // Salary and Paritarias saving handler preserving historical integrity
-  const handleSaveSalary = async (amount: number, isParitaria: boolean, note?: string) => {
-    const targetMonth = selectedMonthKey === 'ALL' ? (availableMonths[0] || '2026-11') : selectedMonthKey;
-    const newConfig = buildUpdatedSalaryConfig(salaryConfig, targetMonth, amount, isParitaria, note);
+  // Multi-income saving handler preserving historical integrity
+  const handleSaveIncome = async (
+    entry: Omit<IncomeEntry, 'id' | 'updatedAt'> & { id?: string }
+  ) => {
+    const newConfig = upsertIncomeInConfig(salaryConfig, entry);
     setSalaryConfig(newConfig);
     if (user && isFirebaseConfigured) {
       try {
         await saveSalaryToFirestore(PRIMARY_LEDGER_ID, newConfig);
       } catch (e) {
-        console.error('Error saving salary to Firestore:', e);
+        console.error('Error saving income to Firestore:', e);
       }
     }
   };
 
-  // Safe developer action: Reset & re-seed the exact clean 70 expenses for Nov 2026
-  const handleResetNovemberExpenses = async () => {
-    if (!confirm('¿Querés limpiar y recargar los 70 gastos oficiales de Noviembre 2026 en Firestore?')) return;
-    try {
-      if (user && isFirebaseConfigured) {
-        await resetAndSeedExpenses(PRIMARY_LEDGER_ID, INITIAL_EXPENSES);
+  const handleDeleteIncome = async (incomeId: string) => {
+    const newConfig = removeIncomeFromConfig(salaryConfig, incomeId);
+    setSalaryConfig(newConfig);
+    if (user && isFirebaseConfigured) {
+      try {
+        await saveSalaryToFirestore(PRIMARY_LEDGER_ID, newConfig);
+      } catch (e) {
+        console.error('Error deleting income from Firestore:', e);
       }
-      setExpenses(INITIAL_EXPENSES);
-      alert('¡Listo! Se cargaron los 70 gastos limpios de Noviembre.');
-    } catch (e: any) {
-      alert('Error al resetear gastos: ' + (e.message || e));
     }
   };
 
@@ -379,16 +382,10 @@ export default function Home() {
         selectedMonthLabel={selectedMonthLabel}
       />
 
-      {/* Developer notice banner if Gabo is inspecting */}
+      {/* Subtle developer notice banner if Gabo is inspecting */}
       {isDevUser && (
-        <div className="bg-black text-[#FFE500] px-4 py-2 text-xs font-black text-center uppercase tracking-wider flex items-center justify-center gap-3 flex-wrap">
-          <span>🛠️ MODO ADMIN / DESARROLLADOR: Sesión como {user?.email}</span>
-          <button
-            onClick={handleResetNovemberExpenses}
-            className="bg-[#FFE500] text-black px-3 py-1 rounded-md border-[2px] border-black shadow-[2px_2px_0px_#fff] text-xs font-black uppercase hover:bg-white transition-all active:scale-95"
-          >
-            🔄 Sincronizar los 68 gastos limpios de Noviembre
-          </button>
+        <div className="bg-black text-[#FFE500] px-4 py-1.5 text-[11px] font-bold text-center uppercase tracking-wider">
+          🛠️ Modo Admin • Sesión como {user?.email}
         </div>
       )}
 
@@ -403,7 +400,7 @@ export default function Home() {
           monthlyCount={monthlyExpenses.length}
         />
 
-        {/* Hero Card with Totals, Cash vs Digital & Budget Meter */}
+        {/* Hero Card with Totals, Cash vs Account vs Credit & Income Meter */}
         <HeroStats 
           expenses={monthlyExpenses} 
           monthLabel={selectedMonthLabel}
@@ -423,15 +420,7 @@ export default function Home() {
           onOpenBatchModal={() => setIsBatchModalOpen(true)}
         />
 
-        {/* Inbox: Automatic Ingestion Queue (Mercado Pago, MODO, Gmail) */}
-        <InboxPending
-          pendingExpenses={pendingExpenses}
-          onConfirm={handleConfirmPending}
-          onReject={handleRejectPending}
-          onSimulatePush={handleSimulatePush}
-        />
-
-        {/* Full Expenses Ledger with Filter chips and Search */}
+        {/* Full Expenses Ledger with Filter chips, Search, Edit & Delete */}
         <ExpenseList
           expenses={monthlyExpenses}
           onDeleteExpense={handleDeleteExpense}
@@ -446,19 +435,14 @@ export default function Home() {
         onImportExpenses={handleImportExpenses}
       />
 
-      {/* Integrations & Automation Drawer */}
-      <IntegrationsDrawer
-        isOpen={isIntegrationsOpen}
-        onClose={() => setIsIntegrationsOpen(false)}
-      />
-
-      {/* Salary & Paritarias Modal */}
+      {/* Multi-Income & History Modal */}
       <SalaryModal
         isOpen={isSalaryModalOpen}
         onClose={() => setIsSalaryModalOpen(false)}
         selectedMonthKey={selectedMonthKey}
         salaryConfig={salaryConfig}
-        onSaveSalary={handleSaveSalary}
+        onSaveIncome={handleSaveIncome}
+        onDeleteIncome={handleDeleteIncome}
       />
     </div>
   );

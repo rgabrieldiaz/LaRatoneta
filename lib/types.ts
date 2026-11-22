@@ -29,6 +29,18 @@ export interface Expense {
   note?: string;
 }
 
+export type IncomeType = 'SUELDO' | 'JUBILACION' | 'PENSION' | 'OTRO';
+
+export interface IncomeEntry {
+  id: string;
+  type: IncomeType;
+  label: string;
+  amount: number;
+  effectiveMonth: string; // "YYYY-MM"
+  repeatsMonthly: boolean;
+  updatedAt?: string;
+}
+
 export interface SalaryHistoryItem {
   id: string;
   effectiveMonth: string; // "YYYY-MM"
@@ -41,5 +53,6 @@ export interface SalaryConfig {
   baseSalary: number;
   monthlyOverrides: Record<string, number>;
   history?: SalaryHistoryItem[];
+  incomes?: IncomeEntry[];
   updatedAt?: string;
 }

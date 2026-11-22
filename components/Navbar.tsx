@@ -44,35 +44,11 @@ export function Navbar({
 
         {/* Action Buttons & Auth */}
         <div className="flex items-center gap-2 flex-wrap">
-          {/* Pegar desde Keep */}
-          <button
-            onClick={onOpenBatchModal}
-            className="brutal-btn bg-[#FF5376] text-white px-3 py-1.5 rounded text-xs flex items-center gap-1.5 hover:bg-[#ff3b63]"
-            title="Pegar lote de Google Keep"
-          >
-            <ClipboardList className="w-4 h-4 text-white" />
-            <span className="hidden sm:inline">PEGAR KEEP 📋</span>
-            <span className="sm:hidden">KEEP</span>
-          </button>
-
-          {/* Sincronización Automática */}
-          <button
-            onClick={onOpenIntegrations}
-            className="brutal-btn bg-white text-black px-3 py-1.5 rounded text-xs flex items-center gap-1.5 hover:bg-slate-100 relative"
-            title="Canales de Ingesta (Apps, Mails, Notificaciones)"
-          >
-            <Radio className="w-4 h-4 text-[#22C55E]" />
-            <span className="hidden sm:inline">SYNC</span>
-            {pendingCount > 0 && (
-              <span className="w-2.5 h-2.5 bg-[#FF5376] rounded-full border border-black animate-ping absolute -top-1 -right-1" />
-            )}
-          </button>
-
           {/* Exportar CSV */}
           <button
             onClick={onExportCSV}
             className="brutal-btn bg-white text-black px-2.5 py-1.5 rounded text-xs flex items-center gap-1 hover:bg-slate-100"
-            title="Exportar a Excel / CSV"
+            title="Descargar planilla (CSV / Excel)"
           >
             <Download className="w-4 h-4" />
           </button>
