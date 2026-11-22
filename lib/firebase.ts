@@ -243,9 +243,9 @@ export async function resetAndSeedExpenses(userId: string, expenses: Expense[]):
  * Salary and Paritaria Management
  */
 export const DEFAULT_SALARY_CONFIG: SalaryConfig = {
-  baseSalary: 1800000,
+  baseSalary: 1200000,
   monthlyOverrides: {
-    '2026-11': 1800000,
+    '2026-11': 1200000,
   },
 };
 

@@ -136,7 +136,7 @@ export default function Home() {
 
   // Active salary for selected month (with paritarias or custom monthly override)
   const activeSalary = useMemo(() => {
-    return salaryConfig.monthlyOverrides?.[selectedMonthKey] ?? salaryConfig.baseSalary ?? 1800000;
+    return salaryConfig.monthlyOverrides?.[selectedMonthKey] ?? salaryConfig.baseSalary ?? 1200000;
   }, [salaryConfig, selectedMonthKey]);
 
   // Months available based on actual expenses

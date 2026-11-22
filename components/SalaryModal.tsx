@@ -22,7 +22,7 @@ export function SalaryModal({
 }: SalaryModalProps) {
   // Current active salary for the selected month
   const activeSalaryForMonth = 
-    salaryConfig.monthlyOverrides?.[selectedMonthKey] ?? salaryConfig.baseSalary ?? 1800000;
+    salaryConfig.monthlyOverrides?.[selectedMonthKey] ?? salaryConfig.baseSalary ?? 1200000;
 
   const [amount, setAmount] = useState<number>(activeSalaryForMonth);
   const [isParitaria, setIsParitaria] = useState<boolean>(true);
@@ -112,7 +112,7 @@ export function SalaryModal({
                 step="1000"
                 value={amount}
                 onChange={(e) => setAmount(parseFloat(e.target.value) || 0)}
-                placeholder="1800000"
+                placeholder="1200000"
                 className="w-full h-16 pl-10 pr-4 bg-[#F8F8F8] border-[3px] border-black rounded-xl text-2xl sm:text-3xl font-black text-black focus:outline-none focus:bg-white shadow-[3px_3px_0px_#000]"
                 required
               />

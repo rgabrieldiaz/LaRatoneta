@@ -14,7 +14,7 @@ interface HeroStatsProps {
 export function HeroStats({
   expenses,
   monthLabel = 'Noviembre 2026',
-  salaryARS = 1800000,
+  salaryARS = 1200000,
   onOpenSalaryModal,
 }: HeroStatsProps) {
   // Calculate Totals
