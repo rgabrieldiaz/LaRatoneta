@@ -340,15 +340,15 @@ export const INITIAL_EXPENSES: Expense[] = [
   },
   {
     "id": "30",
-    "title": "Suscripción Tarjeta",
-    "amount": 0.99,
-    "currency": "USD",
+    "title": "Suscripción Tarjeta (0,99 USD)",
+    "amount": 1485,
+    "currency": "ARS",
     "category": "Resúmenes Tarjeta",
     "method": "CREDITO",
     "date": "2026-11-13",
     "isConfirmed": true,
     "source": "KEEP_BATCH",
-    "note": "Consumo USD Tarjeta"
+    "note": "Equivalente en ARS (0,99 USD aprox)"
   },
   {
     "id": "31",
@@ -366,13 +366,13 @@ export const INITIAL_EXPENSES: Expense[] = [
     "id": "32",
     "title": "Tarjeta Amex",
     "amount": 172,
-    "currency": "USD",
+    "currency": "ARS",
     "category": "Resúmenes Tarjeta",
     "method": "CREDITO",
     "date": "2026-11-13",
     "isConfirmed": true,
     "source": "KEEP_BATCH",
-    "note": "Resumen Amex USD"
+    "note": "Resumen Amex en pesos"
   },
   {
     "id": "33",

@@ -29,25 +29,6 @@ export function parseRawKeepText(text: string): Expense[] {
       continue;
     }
 
-    // Special case: "Tarjeta Amex 172"
-    if (/amex\s*(\d+)/i.test(line)) {
-      const m = line.match(/amex\s*(\d+)/i);
-      const amount = m ? parseFloat(m[1]) : 0;
-      expenses.push({
-        id: `parsed-${Date.now()}-${i}`,
-        title: 'Tarjeta Amex',
-        amount,
-        currency: 'USD',
-        category: 'Resúmenes Tarjeta',
-        method: 'CREDITO',
-        date: todayStr,
-        isConfirmed: true,
-        source: 'KEEP_BATCH',
-        note: 'Resumen Amex USD',
-      });
-      continue;
-    }
-
     // General pattern: Title + Amount at end: "Chino 19510", "Comida al peso 14520", etc.
     const match = line.match(/^(.*?)\s+([\d\.,]+)$/);
     if (match) {
