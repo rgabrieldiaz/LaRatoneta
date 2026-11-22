@@ -1,10 +1,8 @@
-import { IncomeEntry, IncomeType, SalaryConfig, SalaryHistoryItem } from './types';
+import { IncomeEntry, IncomeType, SalaryConfig } from './types';
 
 /**
- * Returns the active list of IncomeEntry items for a specific month ('YYYY-MM').
- * Preserves historical integrity:
- * - Repeating incomes (Sueldo, Jubilación, Pensión) inherit the most recent value <= monthKey.
- * - One-off incomes (repeatsMonthly: false) apply only to their exact effectiveMonth.
+ * Returns the active list of IncomeEntry items for a specific month ('YYYY-MM'),
+ * sorted by user-defined order.
  */
 export function getIncomesForMonth(
   config: SalaryConfig | null | undefined,
@@ -19,15 +17,15 @@ export function getIncomesForMonth(
         amount: 1200000,
         effectiveMonth: '2026-11',
         repeatsMonthly: true,
+        order: 0,
       },
     ];
   }
 
-  // If multi-income entries exist, resolve each source independently for monthKey
   if (config.incomes && config.incomes.length > 0) {
     const resolved: IncomeEntry[] = [];
 
-    // Group repeating incomes by (type + normalized label) so updates in month M don't overwrite month M-1
+    // Group repeating incomes by their logical stream (id prefix or type+label)
     const repeatingGroups = new Map<string, IncomeEntry[]>();
     for (const item of config.incomes) {
       if (!item.repeatsMonthly) {
@@ -52,7 +50,6 @@ export function getIncomesForMonth(
           resolved.push(applicable[0]);
         }
       } else if (entries.length > 0) {
-        // Fallback for months before the first recorded entry of a core Sueldo
         const earliest = [...entries].sort((a, b) =>
           a.effectiveMonth.localeCompare(b.effectiveMonth)
         )[0];
@@ -62,7 +59,7 @@ export function getIncomesForMonth(
       }
     }
 
-    return resolved;
+    return resolved.sort((a, b) => (a.order ?? 999) - (b.order ?? 999));
   }
 
   // Legacy fallback (single Sueldo)
@@ -75,13 +72,11 @@ export function getIncomesForMonth(
       amount,
       effectiveMonth: monthKey,
       repeatsMonthly: true,
+      order: 0,
     },
   ];
 }
 
-/**
- * Resolves total monthly income (Sueldo + Jubilación + Pensión + Otros) for 'YYYY-MM' or 'ALL'.
- */
 export function getSalaryForMonth(
   config: SalaryConfig | null | undefined,
   monthKey: string,
@@ -120,38 +115,44 @@ function getLegacySalaryForSingleMonth(config: SalaryConfig, monthKey: string): 
   return config.baseSalary ?? 1200000;
 }
 
+function ensureMaterializedIncomes(currentConfig: SalaryConfig): IncomeEntry[] {
+  if (currentConfig.incomes && currentConfig.incomes.length > 0) {
+    return [...currentConfig.incomes];
+  }
+  return [
+    {
+      id: 'inc-sueldo-base',
+      type: 'SUELDO',
+      label: 'Sueldo',
+      amount: currentConfig.baseSalary ?? 1200000,
+      effectiveMonth: '2026-11',
+      repeatsMonthly: true,
+      order: 0,
+    },
+  ];
+}
+
 /**
- * Adds or updates an IncomeEntry while preserving historical records for previous months.
+ * Adds a new IncomeEntry OR updates an existing one by id.
+ * Allows multiple entries of the same type (e.g. 2nd Sueldo, 2nd Jubilación).
  */
 export function upsertIncomeInConfig(
   currentConfig: SalaryConfig,
   entry: Omit<IncomeEntry, 'id' | 'updatedAt'> & { id?: string }
 ): SalaryConfig {
-  // Ensure existing legacy salary is materialized into `incomes` before adding new ones
-  let incomes: IncomeEntry[] =
-    currentConfig.incomes && currentConfig.incomes.length > 0
-      ? [...currentConfig.incomes]
-      : [
-          {
-            id: 'inc-sueldo-base',
-            type: 'SUELDO',
-            label: 'Sueldo',
-            amount: currentConfig.baseSalary ?? 1200000,
-            effectiveMonth: '2026-11',
-            repeatsMonthly: true,
-          },
-        ];
-
+  const incomes = ensureMaterializedIncomes(currentConfig);
   const normalizedLabel = entry.label.trim() || defaultLabelForType(entry.type);
 
-  // Check if an entry for the exact same month + type + label already exists -> update it
-  const existingIdx = incomes.findIndex(
-    (i) =>
-      (entry.id && i.id === entry.id) ||
-      (i.effectiveMonth === entry.effectiveMonth &&
-        i.type === entry.type &&
-        i.label.trim().toLowerCase() === normalizedLabel.toLowerCase())
-  );
+  const isLegacyEdit =
+    entry.id === 'legacy-sueldo' || entry.id === 'default-sueldo';
+
+  const existingIdx = isLegacyEdit
+    ? incomes.findIndex((i) => i.id === 'inc-sueldo-base' || i.type === 'SUELDO')
+    : entry.id
+    ? incomes.findIndex((i) => i.id === entry.id)
+    : -1;
+
+  const maxOrder = incomes.reduce((max, i) => Math.max(max, i.order ?? 0), -1);
 
   const newEntry: IncomeEntry = {
     id:
@@ -163,6 +164,7 @@ export function upsertIncomeInConfig(
     amount: entry.amount,
     effectiveMonth: entry.effectiveMonth,
     repeatsMonthly: entry.repeatsMonthly,
+    order: existingIdx >= 0 ? (incomes[existingIdx].order ?? existingIdx) : maxOrder + 1,
     updatedAt: new Date().toISOString(),
   };
 
@@ -172,7 +174,6 @@ export function upsertIncomeInConfig(
     incomes.push(newEntry);
   }
 
-  // Keep legacy fields synced for backwards compatibility
   const monthTotal = getIncomesForMonth({ ...currentConfig, incomes }, entry.effectiveMonth).reduce(
     (s, i) => s + i.amount,
     0
@@ -180,7 +181,10 @@ export function upsertIncomeInConfig(
 
   return {
     ...currentConfig,
-    baseSalary: entry.type === 'SUELDO' && entry.repeatsMonthly ? entry.amount : currentConfig.baseSalary,
+    baseSalary:
+      entry.type === 'SUELDO' && entry.repeatsMonthly && existingIdx <= 0
+        ? entry.amount
+        : currentConfig.baseSalary,
     monthlyOverrides: {
       ...(currentConfig.monthlyOverrides || {}),
       [entry.effectiveMonth]: monthTotal,
@@ -191,10 +195,46 @@ export function upsertIncomeInConfig(
 }
 
 /**
- * Removes an IncomeEntry by id.
+ * Reorders an income UP or DOWN within the active month's list.
  */
+export function reorderIncomeInConfig(
+  currentConfig: SalaryConfig,
+  monthKey: string,
+  incomeId: string,
+  direction: 'UP' | 'DOWN'
+): SalaryConfig {
+  const incomes = ensureMaterializedIncomes(currentConfig);
+  const active = getIncomesForMonth({ ...currentConfig, incomes }, monthKey);
+
+  const idx = active.findIndex((i) => i.id === incomeId);
+  if (idx < 0) return currentConfig;
+
+  const swapIdx = direction === 'UP' ? idx - 1 : idx + 1;
+  if (swapIdx < 0 || swapIdx >= active.length) return currentConfig;
+
+  // Normalize sequential order on active items, then swap
+  const orderedIds = active.map((a) => a.id);
+  const temp = orderedIds[idx];
+  orderedIds[idx] = orderedIds[swapIdx];
+  orderedIds[swapIdx] = temp;
+
+  const updatedIncomes = incomes.map((item) => {
+    const pos = orderedIds.indexOf(item.id);
+    if (pos >= 0) {
+      return { ...item, order: pos };
+    }
+    return item;
+  });
+
+  return {
+    ...currentConfig,
+    incomes: updatedIncomes,
+    updatedAt: new Date().toISOString(),
+  };
+}
+
 export function removeIncomeFromConfig(currentConfig: SalaryConfig, incomeId: string): SalaryConfig {
-  const incomes = (currentConfig.incomes || []).filter((i) => i.id !== incomeId);
+  const incomes = ensureMaterializedIncomes(currentConfig).filter((i) => i.id !== incomeId);
   return {
     ...currentConfig,
     incomes,
@@ -213,22 +253,6 @@ export function defaultLabelForType(type: IncomeType): string {
     case 'OTRO':
       return 'Otro ingreso';
   }
-}
-
-export function buildUpdatedSalaryConfig(
-  currentConfig: SalaryConfig,
-  monthKey: string,
-  amount: number,
-  isParitaria: boolean,
-  note?: string
-): SalaryConfig {
-  return upsertIncomeInConfig(currentConfig, {
-    type: 'SUELDO',
-    label: note || 'Sueldo',
-    amount,
-    effectiveMonth: monthKey,
-    repeatsMonthly: isParitaria,
-  });
 }
 
 export function getSortedSalaryHistory(config: SalaryConfig): Array<{

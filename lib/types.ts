@@ -38,6 +38,7 @@ export interface IncomeEntry {
   amount: number;
   effectiveMonth: string; // "YYYY-MM"
   repeatsMonthly: boolean;
+  order?: number;
   updatedAt?: string;
 }
 

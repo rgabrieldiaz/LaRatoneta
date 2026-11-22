@@ -19,6 +19,7 @@ import {
   getSalaryForMonth,
   upsertIncomeInConfig,
   removeIncomeFromConfig,
+  reorderIncomeInConfig,
 } from '../lib/salaryUtils';
 import { 
   getAvailableMonths, 
@@ -279,6 +280,22 @@ export default function Home() {
     }
   };
 
+  const handleReorderIncome = async (
+    monthKey: string,
+    incomeId: string,
+    direction: 'UP' | 'DOWN'
+  ) => {
+    const newConfig = reorderIncomeInConfig(salaryConfig, monthKey, incomeId, direction);
+    setSalaryConfig(newConfig);
+    if (user && isFirebaseConfigured) {
+      try {
+        await saveSalaryToFirestore(PRIMARY_LEDGER_ID, newConfig);
+      } catch (e) {
+        console.error('Error reordering income in Firestore:', e);
+      }
+    }
+  };
+
   const handleSimulatePush = async () => {
     const samples = [
       { title: 'Supermercado Día', amount: 15400, method: 'CUENTA' as const, note: 'Ripio Prepaga NFC' },
@@ -443,6 +460,7 @@ export default function Home() {
         salaryConfig={salaryConfig}
         onSaveIncome={handleSaveIncome}
         onDeleteIncome={handleDeleteIncome}
+        onReorderIncome={handleReorderIncome}
       />
     </div>
   );
