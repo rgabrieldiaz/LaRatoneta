@@ -1,22 +1,17 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
   <!-- Background Badge: Yellow Neo-Brutalist Squircle with thick border -->
   <rect x="6" y="6" width="108" height="108" rx="28" fill="#FFE500" stroke="#000000" stroke-width="5" />
-  
-  <!-- Shadow of the Ratita body -->
-  <ellipse cx="62" cy="74" rx="34" ry="30" fill="#000000" opacity="0.15" />
+
+  <!-- Subtle shadow behind head -->
+  <ellipse cx="62" cy="59" rx="27" ry="23" fill="#000000" opacity="0.12" />
 
   <!-- Left Ear -->
-  <circle cx="38" cy="40" r="18" fill="#E8D5F5" stroke="#000000" stroke-width="4.5" />
-  <circle cx="38" cy="40" r="11" fill="#FFB7B2" stroke="#000000" stroke-width="2.5" />
+  <circle cx="37" cy="39" r="18" fill="#E8D5F5" stroke="#000000" stroke-width="4.5" />
+  <circle cx="37" cy="39" r="11" fill="#FFB7B2" stroke="#000000" stroke-width="2.5" />
 
   <!-- Right Ear -->
-  <circle cx="82" cy="40" r="18" fill="#E8D5F5" stroke="#000000" stroke-width="4.5" />
-  <circle cx="82" cy="40" r="11" fill="#FFB7B2" stroke="#000000" stroke-width="2.5" />
-
-  <!-- Body -->
-  <ellipse cx="60" cy="74" rx="32" ry="28" fill="#E8D5F5" stroke="#000000" stroke-width="4.5" />
-  <!-- Tummy -->
-  <ellipse cx="60" cy="78" rx="20" ry="17" fill="#FFFFFF" stroke="#000000" stroke-width="2.5" />
+  <circle cx="83" cy="39" r="18" fill="#E8D5F5" stroke="#000000" stroke-width="4.5" />
+  <circle cx="83" cy="39" r="11" fill="#FFB7B2" stroke="#000000" stroke-width="2.5" />
 
   <!-- Head -->
   <ellipse cx="60" cy="56" rx="26" ry="22" fill="#E8D5F5" stroke="#000000" stroke-width="4.5" />
@@ -45,13 +40,13 @@
   <line x1="88" y1="58" x2="78" y2="60" stroke="#000000" stroke-width="2.5" stroke-linecap="round" />
   <line x1="90" y1="65" x2="79" y2="64" stroke="#000000" stroke-width="2.5" stroke-linecap="round" />
 
-  <!-- Paws holding a Gold Coin with $ symbol -->
-  <circle cx="60" cy="80" r="14" fill="#FFD700" stroke="#000000" stroke-width="3.5" />
-  <circle cx="60" cy="80" r="11" fill="none" stroke="#B8860B" stroke-width="1.5" stroke-dasharray="2 2" />
-  <text x="60" y="85" font-family="'Space Grotesk', sans-serif" font-weight="900" font-size="14" fill="#000000" text-anchor="middle">$</text>
+  <!-- Paws holding a Gold Coin with $ symbol right below chin -->
+  <circle cx="60" cy="87" r="13.5" fill="#FFD700" stroke="#000000" stroke-width="3.5" />
+  <circle cx="60" cy="87" r="10" fill="none" stroke="#B8860B" stroke-width="1.5" stroke-dasharray="2 2" />
+  <text x="60" y="92" font-family="'Space Grotesk', sans-serif" font-weight="900" font-size="14" fill="#000000" text-anchor="middle">$</text>
 
   <!-- Left Paw -->
-  <ellipse cx="48" cy="80" rx="4.5" ry="5.5" fill="#E8D5F5" stroke="#000000" stroke-width="2.5" transform="rotate(-15 48 80)" />
+  <ellipse cx="48" cy="87" rx="4.5" ry="5.5" fill="#E8D5F5" stroke="#000000" stroke-width="2.5" transform="rotate(-15 48 87)" />
   <!-- Right Paw -->
-  <ellipse cx="72" cy="80" rx="4.5" ry="5.5" fill="#E8D5F5" stroke="#000000" stroke-width="2.5" transform="rotate(15 72 80)" />
+  <ellipse cx="72" cy="87" rx="4.5" ry="5.5" fill="#E8D5F5" stroke="#000000" stroke-width="2.5" transform="rotate(15 72 87)" />
 </svg>
