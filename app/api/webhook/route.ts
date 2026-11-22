@@ -2,7 +2,14 @@ import { NextResponse } from 'next/server';
 import { getAdminFirestore } from '@/lib/firebaseAdmin';
 import { inferCategoryAndMethod, parseRawKeepText } from '@/lib/keepParser';
 import { fetchDolarMepRate } from '@/lib/dolarApi';
+import { checkRateLimit } from '@/lib/rateLimit';
 import { Expense, PaymentMethod } from '@/lib/types';
+
+function getClientIp(request: Request): string {
+  const forwarded = request.headers.get('x-forwarded-for');
+  if (forwarded) return forwarded.split(',')[0].trim();
+  return request.headers.get('x-real-ip') || 'unknown';
+}
 
 const LEDGER_ID = 'primary';
 
@@ -75,6 +82,24 @@ function formatMethodLabel(method: PaymentMethod): string {
 
 export async function POST(request: Request) {
   try {
+    const ip = getClientIp(request);
+
+    // 0. General IP Rate Limit (30 requests / minute)
+    const generalLimit = checkRateLimit(`webhook:${ip}`, 30, 60_000);
+    if (!generalLimit.allowed) {
+      return NextResponse.json(
+        {
+          success: false,
+          notification: '⏳ Demasiadas peticiones. Esperá unos segundos.',
+          error: 'Too many requests',
+        },
+        {
+          status: 429,
+          headers: { 'Retry-After': String(generalLimit.retryAfterSec) },
+        }
+      );
+    }
+
     const body = await request.json();
 
     // 1. Validate Webhook Secret
@@ -96,6 +121,22 @@ export async function POST(request: Request) {
       request.headers.get('x-webhook-secret') || bearerSecret || body.secret;
 
     if (!providedSecret || providedSecret !== expectedSecret) {
+      // Strict brute-force protection: max 5 invalid secret attempts per 5 minutes
+      const authFailLimit = checkRateLimit(`webhook_auth_fail:${ip}`, 5, 5 * 60_000);
+      if (!authFailLimit.allowed) {
+        return NextResponse.json(
+          {
+            success: false,
+            notification: '🚫 Demasiados intentos fallidos. Esperá 5 minutos.',
+            error: 'Too many failed authentication attempts',
+          },
+          {
+            status: 429,
+            headers: { 'Retry-After': String(authFailLimit.retryAfterSec) },
+          }
+        );
+      }
+
       return NextResponse.json(
         {
           success: false,

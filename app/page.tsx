@@ -57,6 +57,7 @@ export default function Home() {
   const [isIntegrationsOpen, setIsIntegrationsOpen] = useState(false);
   const [isSalaryModalOpen, setIsSalaryModalOpen] = useState(false);
   const [salaryConfig, setSalaryConfig] = useState<SalaryConfig>(DEFAULT_SALARY_CONFIG);
+  const [lastDeleted, setLastDeleted] = useState<{ expense: Expense; secondsLeft: number } | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
 
   // Month navigation state
@@ -205,15 +206,50 @@ export default function Home() {
     }
   };
 
+  // 5-second Undo toast countdown
+  useEffect(() => {
+    if (!lastDeleted) return;
+    if (lastDeleted.secondsLeft <= 0) {
+      setLastDeleted(null);
+      return;
+    }
+    const timer = setTimeout(() => {
+      setLastDeleted((prev) =>
+        prev ? { ...prev, secondsLeft: prev.secondsLeft - 1 } : null
+      );
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [lastDeleted]);
+
   const handleDeleteExpense = async (id: string) => {
+    const target = expenses.find((e) => e.id === id);
+    setExpenses((prev) => prev.filter((e) => e.id !== id));
+
+    if (target) {
+      setLastDeleted({ expense: target, secondsLeft: 5 });
+    }
+
     if (user && isFirebaseConfigured) {
       try {
         await deleteExpenseFromFirestore(PRIMARY_LEDGER_ID, id);
       } catch (e) {
         console.error('Error deleting from Firestore:', e);
       }
-    } else {
-      setExpenses(prev => prev.filter(e => e.id !== id));
+    }
+  };
+
+  const handleUndoDelete = async () => {
+    if (!lastDeleted) return;
+    const restored = lastDeleted.expense;
+    setLastDeleted(null);
+    setExpenses((prev) => [restored, ...prev]);
+
+    if (user && isFirebaseConfigured) {
+      try {
+        await saveExpenseToFirestore(PRIMARY_LEDGER_ID, restored);
+      } catch (e) {
+        console.error('Error restoring deleted expense to Firestore:', e);
+      }
     }
   };
 
@@ -468,6 +504,23 @@ export default function Home() {
         isOpen={isIntegrationsOpen}
         onClose={() => setIsIntegrationsOpen(false)}
       />
+
+      {/* 5-second Undo Delete Toast */}
+      {lastDeleted && (
+        <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 w-[92%] max-w-md bg-black text-white border-[3px] border-[#FFE500] shadow-[5px_5px_0px_#000] rounded-xl px-4 py-3 flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <span className="text-xs sm:text-sm font-black block truncate">
+              🗑️ Borrado: {lastDeleted.expense.title} (${lastDeleted.expense.amount.toLocaleString('es-AR')})
+            </span>
+          </div>
+          <button
+            onClick={handleUndoDelete}
+            className="px-3 py-1.5 bg-[#FFE500] text-black border-[2px] border-white rounded-lg text-xs font-black uppercase shrink-0 hover:bg-white transition-colors"
+          >
+            ↩️ Deshacer ({lastDeleted.secondsLeft}s)
+          </button>
+        </div>
+      )}
     </div>
   );
 }
