@@ -3,6 +3,8 @@ import {
   getAuth, 
   GoogleAuthProvider, 
   signInWithPopup, 
+  signInWithRedirect,
+  getRedirectResult,
   signOut, 
   onAuthStateChanged, 
   User, 
@@ -56,15 +58,26 @@ if (typeof window !== 'undefined' && isFirebaseConfigured) {
 
 export { auth, db };
 
-// Google Auth Provider
+// Google Auth Provider with intelligent fallback for mobile/popup blockers
 export async function loginWithGoogle(): Promise<User | null> {
   if (!auth) {
     throw new Error('Firebase no está configurado aún. Agregá las variables de entorno en Vercel.');
   }
   const provider = new GoogleAuthProvider();
   provider.setCustomParameters({ prompt: 'select_account' });
-  const result = await signInWithPopup(auth, provider);
-  return result.user;
+  
+  try {
+    const result = await signInWithPopup(auth, provider);
+    return result.user;
+  } catch (error: any) {
+    // If the browser popup blocker intercepted the popup, fall back to redirect automatically
+    if (error?.code === 'auth/popup-blocked' || error?.code === 'auth/cancelled-popup-request') {
+      console.warn('Popup bloqueado por el navegador. Usando redirección directa...');
+      await signInWithRedirect(auth, provider);
+      return null;
+    }
+    throw error;
+  }
 }
 
 export async function logoutUser(): Promise<void> {
@@ -77,6 +90,12 @@ export function onUserAuthStateChanged(callback: (user: User | null) => void) {
     callback(null);
     return () => {};
   }
+  // Process redirect result if coming back from redirect flow
+  getRedirectResult(auth).catch((err) => {
+    if (err?.code !== 'auth/null-user') {
+      console.warn('Redirect auth check:', err?.message || err);
+    }
+  });
   return onAuthStateChanged(auth, callback);
 }
 
