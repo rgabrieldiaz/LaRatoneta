@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { ClipboardList, Radio, Download, LogIn, LogOut, User as UserIcon } from 'lucide-react';
+import { Download, LogOut, Settings } from 'lucide-react';
 import { User } from 'firebase/auth';
 
 interface NavbarProps {
@@ -18,16 +18,11 @@ interface NavbarProps {
 }
 
 export function Navbar({
-  onOpenBatchModal,
   onOpenIntegrations,
   onExportCSV,
-  totalExpensesCount,
-  pendingCount,
   user,
   onLogin,
   onLogout,
-  isConfigured,
-  selectedMonthLabel = 'Noviembre 2026',
 }: NavbarProps) {
   return (
     <header className="sticky top-0 z-40 bg-[#FFE500] border-b-[3.5px] border-black px-4 py-3">
@@ -70,6 +65,13 @@ export function Navbar({
               <span className="text-xs font-black text-black max-w-[100px] truncate hidden md:inline">
                 {user.displayName?.split(' ')[0] || user.email?.split('@')[0]}
               </span>
+              <button
+                onClick={onOpenIntegrations}
+                className="text-slate-600 hover:text-black transition-colors p-0.5 border-l border-slate-200 pl-2"
+                title="Configurar Atajos de iPhone (Apple Pay & Siri)"
+              >
+                <Settings className="w-4 h-4" />
+              </button>
               <button
                 onClick={onLogout}
                 className="text-slate-500 hover:text-[#FF5376] transition-colors p-0.5"

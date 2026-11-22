@@ -10,7 +10,7 @@ import { QuickInput } from '../components/QuickInput';
 import { InboxPending } from '../components/InboxPending';
 import { ExpenseList } from '../components/ExpenseList';
 import { KeepBatchModal } from '../components/KeepBatchModal';
-import { IntegrationsDrawer } from '../components/IntegrationsDrawer';
+import { WebhookSettingsModal } from '../components/WebhookSettingsModal';
 import { PrivateGate } from '../components/PrivateGate';
 import { SalaryModal } from '../components/SalaryModal';
 import { INITIAL_EXPENSES } from '../lib/initialData';
@@ -461,6 +461,12 @@ export default function Home() {
         onSaveIncome={handleSaveIncome}
         onDeleteIncome={handleDeleteIncome}
         onReorderIncome={handleReorderIncome}
+      />
+
+      {/* Phase 1: iPhone Shortcuts (Apple Pay & Siri) Settings Modal */}
+      <WebhookSettingsModal
+        isOpen={isIntegrationsOpen}
+        onClose={() => setIsIntegrationsOpen(false)}
       />
     </div>
   );
