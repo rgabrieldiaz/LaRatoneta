@@ -2,10 +2,11 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'MisGastos 💸 | Control Diario Neo-Brutalism',
-  description: 'Control de gastos diario ultra rápido para Argentina. Centraliza Mercado Pago, bancos, MODO y efectivo de chinos y panaderías.',
+  title: 'La Ratoneta 🧀 | Control Diario de Gastos',
+  description: 'Control de gastos diario ultra rápido para Argentina con la ratita tierna. Centraliza Mercado Pago, bancos, MODO y efectivo de chinos y panaderías.',
   icons: {
-    icon: 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💸</text></svg>',
+    icon: '/ratita.svg',
+    apple: '/ratita.svg',
   },
 };
 

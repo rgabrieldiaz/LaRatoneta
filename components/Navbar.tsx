@@ -23,10 +23,13 @@ export function Navbar({
       <div className="max-w-5xl mx-auto flex flex-wrap items-center justify-between gap-3">
         {/* Brand */}
         <div className="flex items-center gap-2">
-          <div className="bg-white border-[3px] border-black shadow-[3px_3px_0px_#000] px-3 py-1 rounded-lg flex items-center gap-2">
-            <span className="text-xl">💸</span>
-            <span className="font-extrabold text-lg tracking-tight uppercase">MIS GASTOS</span>
-            <span className="bg-[#22C55E] text-black text-[10px] font-black px-1.5 py-0.5 rounded border border-black uppercase">
+          <div className="bg-white border-[3px] border-black shadow-[3px_3px_0px_#000] px-3 py-1 rounded-lg flex items-center gap-2.5">
+            <img src="/ratita.svg" alt="Ratita Tierna" className="w-8 h-8 rounded shrink-0 object-contain" />
+            <div>
+              <span className="font-extrabold text-lg tracking-tight uppercase block leading-none">LA RATONETA</span>
+              <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">EXPENSE TRACKER 🧀</span>
+            </div>
+            <span className="bg-[#22C55E] text-black text-[10px] font-black px-1.5 py-0.5 rounded border border-black uppercase ml-1">
               LIVE
             </span>
           </div>
