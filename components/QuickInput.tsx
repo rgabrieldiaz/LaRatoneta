@@ -3,12 +3,13 @@
 import React, { useState, useEffect } from 'react';
 import { parseRawKeepText } from '../lib/keepParser';
 import { fetchDolarMepRate, FALLBACK_DOLAR_MEP } from '../lib/dolarApi';
-import { Category, Expense, PaymentMethod } from '../lib/types';
+import { Category, Expense, MerchantRulesMap, PaymentMethod } from '../lib/types';
 import { Zap, Mic, Plus, ClipboardList, SlidersHorizontal } from 'lucide-react';
 
 interface QuickInputProps {
   onAddExpense: (expense: Expense) => void;
   onOpenBatchModal: () => void;
+  merchantRules?: MerchantRulesMap;
 }
 
 const MANUAL_CATEGORIES: Category[] = [
@@ -28,7 +29,7 @@ const MANUAL_METHODS: { value: PaymentMethod; label: string }[] = [
   { value: 'SUBE', label: '🚌 SUBE' },
 ];
 
-export function QuickInput({ onAddExpense, onOpenBatchModal }: QuickInputProps) {
+export function QuickInput({ onAddExpense, onOpenBatchModal, merchantRules }: QuickInputProps) {
   const [mode, setMode] = useState<'QUICK' | 'MANUAL'>('QUICK');
   const [inputVal, setInputVal] = useState('');
   const [isListening, setIsListening] = useState(false);
@@ -51,7 +52,7 @@ export function QuickInput({ onAddExpense, onOpenBatchModal }: QuickInputProps) 
     if (e) e.preventDefault();
     if (!inputVal.trim()) return;
 
-    const parsedList = parseRawKeepText(inputVal, mepRate);
+    const parsedList = parseRawKeepText(inputVal, mepRate, merchantRules);
     if (parsedList.length > 0) {
       onAddExpense(parsedList[0]);
       setInputVal('');

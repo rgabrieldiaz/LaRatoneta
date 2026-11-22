@@ -59,3 +59,11 @@ export interface SalaryConfig {
 }
 
 export type CategoryBudgets = Partial<Record<Category, number>>;
+
+export interface MerchantRule {
+  category: Category;
+  method?: PaymentMethod;
+  updatedAt?: string;
+}
+
+export type MerchantRulesMap = Record<string, MerchantRule>;

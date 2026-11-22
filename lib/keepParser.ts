@@ -1,5 +1,38 @@
 import { FALLBACK_DOLAR_MEP } from './dolarApi';
-import { Category, Expense, PaymentMethod } from './types';
+import { Category, Expense, MerchantRulesMap, PaymentMethod } from './types';
+
+const GENERIC_WORDS = new Set([
+  'compra',
+  'gasto',
+  'varios',
+  'pago',
+  'otro',
+  'otros',
+  'comida',
+  'tarjeta',
+  'transferencia',
+  'efectivo',
+  'regalo',
+]);
+
+/**
+ * Normalizes a merchant title into a safe lookup key, filtering out generic words
+ * so we never accidentally learn an overly broad rule.
+ */
+export function normalizeMerchantKey(title: string): string | null {
+  const cleaned = title
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .replace(/[^a-z0-9\s]/g, '')
+    .replace(/\s+/g, ' ');
+
+  if (cleaned.length < 3 || /^\d+$/.test(cleaned) || GENERIC_WORDS.has(cleaned)) {
+    return null;
+  }
+  return cleaned;
+}
 
 interface MethodOverrideResult {
   cleanedText: string;
@@ -66,7 +99,8 @@ function cleanSpokenNoise(text: string): { cleaned: string; isUSD: boolean } {
 
 export function parseRawKeepText(
   text: string,
-  dolarMepRate: number = FALLBACK_DOLAR_MEP
+  dolarMepRate: number = FALLBACK_DOLAR_MEP,
+  customRules?: MerchantRulesMap
 ): Expense[] {
   const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
   const expenses: Expense[] = [];
@@ -105,7 +139,7 @@ export function parseRawKeepText(
     if (!rawTitle) continue;
 
     const title = rawTitle.charAt(0).toUpperCase() + rawTitle.slice(1);
-    const inferred = inferCategoryAndMethod(rawTitle);
+    const inferred = inferCategoryAndMethod(rawTitle, customRules);
 
     const finalMethod = explicitMethod ?? inferred.method;
     const baseNote = explicitMethod ? explicitNote : inferred.note;
@@ -131,11 +165,42 @@ export function parseRawKeepText(
   return expenses;
 }
 
-export function inferCategoryAndMethod(title: string): {
+export function inferCategoryAndMethod(
+  title: string,
+  customRules?: MerchantRulesMap
+): {
   category: Category;
   method: PaymentMethod;
   note?: string;
 } {
+  if (customRules) {
+    const norm = normalizeMerchantKey(title);
+    if (norm && customRules[norm]) {
+      const exactRule = customRules[norm];
+      return {
+        category: exactRule.category,
+        method: exactRule.method || 'CUENTA',
+      };
+    }
+    if (norm) {
+      let bestMatchKey = '';
+      for (const key of Object.keys(customRules)) {
+        if (key.length >= 4 && (norm.includes(key) || key.includes(norm))) {
+          if (key.length > bestMatchKey.length) {
+            bestMatchKey = key;
+          }
+        }
+      }
+      if (bestMatchKey) {
+        const partialRule = customRules[bestMatchKey];
+        return {
+          category: partialRule.category,
+          method: partialRule.method || 'CUENTA',
+        };
+      }
+    }
+  }
+
   const t = title.toLowerCase();
 
   // 1. Supermercados

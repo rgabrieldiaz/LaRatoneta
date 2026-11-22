@@ -15,7 +15,8 @@ import { PrivateGate } from '../components/PrivateGate';
 import { SalaryModal } from '../components/SalaryModal';
 import { CategoryBudgetsModal } from '../components/CategoryBudgetsModal';
 import { INITIAL_EXPENSES } from '../lib/initialData';
-import { CategoryBudgets, Expense, IncomeEntry, SalaryConfig } from '../lib/types';
+import { CategoryBudgets, Expense, IncomeEntry, MerchantRulesMap, SalaryConfig } from '../lib/types';
+import { normalizeMerchantKey } from '../lib/keepParser';
 import {
   getSalaryForMonth,
   upsertIncomeInConfig,
@@ -45,6 +46,8 @@ import {
   saveSalaryToFirestore,
   subscribeToCategoryBudgets,
   saveCategoryBudgetsToFirestore,
+  subscribeToMerchantRules,
+  saveMerchantRuleToFirestore,
   DEFAULT_SALARY_CONFIG,
   PRIMARY_LEDGER_ID,
   AUTHORIZED_EMAILS
@@ -62,6 +65,7 @@ export default function Home() {
   const [salaryConfig, setSalaryConfig] = useState<SalaryConfig>(DEFAULT_SALARY_CONFIG);
   const [isBudgetsModalOpen, setIsBudgetsModalOpen] = useState(false);
   const [categoryBudgets, setCategoryBudgets] = useState<CategoryBudgets>({});
+  const [merchantRules, setMerchantRules] = useState<MerchantRulesMap>({});
   const [budgetAlertToast, setBudgetAlertToast] = useState<{ message: string; isOver: boolean } | null>(null);
   const [lastDeleted, setLastDeleted] = useState<{ expense: Expense; secondsLeft: number } | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
@@ -146,9 +150,13 @@ export default function Home() {
       const unsubBudgets = subscribeToCategoryBudgets(PRIMARY_LEDGER_ID, (budgets) => {
         setCategoryBudgets(budgets || {});
       });
+      const unsubMerchantRules = subscribeToMerchantRules(PRIMARY_LEDGER_ID, (rules) => {
+        setMerchantRules(rules || {});
+      });
       return () => {
         unsubSalary();
         unsubBudgets();
+        unsubMerchantRules();
       };
     }
   }, [user, isAuthorized]);
@@ -312,10 +320,25 @@ export default function Home() {
   };
 
   const handleUpdateExpense = async (updatedExpense: Expense) => {
+    const previousExpense = expenses.find((e) => e.id === updatedExpense.id);
     setExpenses(prev => prev.map(e => (e.id === updatedExpense.id ? updatedExpense : e)));
     if (user && isFirebaseConfigured) {
       try {
         await saveExpenseToFirestore(PRIMARY_LEDGER_ID, updatedExpense);
+        if (
+          previousExpense &&
+          (previousExpense.category !== updatedExpense.category ||
+            previousExpense.method !== updatedExpense.method)
+        ) {
+          const merchantKey = normalizeMerchantKey(updatedExpense.title);
+          if (merchantKey) {
+            await saveMerchantRuleToFirestore(PRIMARY_LEDGER_ID, merchantKey, {
+              category: updatedExpense.category,
+              method: updatedExpense.method,
+              updatedAt: new Date().toISOString(),
+            });
+          }
+        }
       } catch (e) {
         console.error('Error updating expense in Firestore:', e);
       }
@@ -515,6 +538,7 @@ export default function Home() {
         <QuickInput
           onAddExpense={handleAddExpense}
           onOpenBatchModal={() => setIsBatchModalOpen(true)}
+          merchantRules={merchantRules}
         />
 
         {/* Hero Card with Totals, Cash vs Account vs Credit & Income Meter */}
@@ -546,6 +570,7 @@ export default function Home() {
         isOpen={isBatchModalOpen}
         onClose={() => setIsBatchModalOpen(false)}
         onImportExpenses={handleImportExpenses}
+        merchantRules={merchantRules}
       />
 
       {/* Multi-Income & History Modal */}

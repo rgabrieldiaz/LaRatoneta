@@ -23,7 +23,7 @@ import {
   getDocs,
   Firestore 
 } from 'firebase/firestore';
-import { CategoryBudgets, Expense, SalaryConfig } from './types';
+import { CategoryBudgets, Expense, MerchantRule, MerchantRulesMap, SalaryConfig } from './types';
 import { INITIAL_EXPENSES } from './initialData';
 
 const firebaseConfig = {
@@ -319,4 +319,53 @@ export async function saveCategoryBudgetsToFirestore(
   if (!db) return;
   const docRef = doc(db, 'users', userId, 'settings', 'budgets');
   await setDoc(docRef, { limits, updatedAt: new Date().toISOString() });
+}
+
+/**
+ * Learned Merchant Rules (Auto-categorization memory)
+ */
+export function subscribeToMerchantRules(
+  userId: string,
+  callback: (rules: MerchantRulesMap) => void
+) {
+  if (!db) {
+    callback({});
+    return () => {};
+  }
+
+  const docRef = doc(db, 'users', userId, 'settings', 'merchant_rules');
+  return onSnapshot(
+    docRef,
+    (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        callback((data?.rules || {}) as MerchantRulesMap);
+      } else {
+        callback({});
+      }
+    },
+    (error) => {
+      console.error('Firestore merchant_rules snapshot error:', error);
+      callback({});
+    }
+  );
+}
+
+export async function saveMerchantRuleToFirestore(
+  userId: string,
+  merchantKey: string,
+  rule: MerchantRule
+): Promise<void> {
+  if (!db) return;
+  const docRef = doc(db, 'users', userId, 'settings', 'merchant_rules');
+  await setDoc(
+    docRef,
+    {
+      rules: {
+        [merchantKey]: rule,
+      },
+      updatedAt: new Date().toISOString(),
+    },
+    { merge: true }
+  );
 }

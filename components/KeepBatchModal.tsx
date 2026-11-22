@@ -2,13 +2,15 @@
 
 import React, { useState } from 'react';
 import { parseRawKeepText } from '../lib/keepParser';
-import { Expense } from '../lib/types';
+import { FALLBACK_DOLAR_MEP } from '../lib/dolarApi';
+import { Expense, MerchantRulesMap } from '../lib/types';
 import { X, ClipboardList, Sparkles, Check, ArrowRight, AlertCircle } from 'lucide-react';
 
 interface KeepBatchModalProps {
   isOpen: boolean;
   onClose: () => void;
   onImportExpenses: (expenses: Expense[]) => void;
+  merchantRules?: MerchantRulesMap;
 }
 
 const SAMPLE_NOTES = `Chino 19510 efectivo
@@ -19,7 +21,7 @@ Verdulería 13000 efectivo
 Carrefour 10000 ripio
 Big Pons 23200 credito`;
 
-export function KeepBatchModal({ isOpen, onClose, onImportExpenses }: KeepBatchModalProps) {
+export function KeepBatchModal({ isOpen, onClose, onImportExpenses, merchantRules }: KeepBatchModalProps) {
   const [text, setText] = useState('');
   const [previewExpenses, setPreviewExpenses] = useState<Expense[]>([]);
   const [batchDate, setBatchDate] = useState(new Date().toISOString().split('T')[0]);
@@ -28,7 +30,7 @@ export function KeepBatchModal({ isOpen, onClose, onImportExpenses }: KeepBatchM
 
   const handleTextChange = (val: string, dateToUse = batchDate) => {
     setText(val);
-    const parsed = parseRawKeepText(val);
+    const parsed = parseRawKeepText(val, FALLBACK_DOLAR_MEP, merchantRules);
     setPreviewExpenses(parsed.map(p => ({ ...p, date: dateToUse })));
   };
 

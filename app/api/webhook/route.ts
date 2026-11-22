@@ -160,6 +160,17 @@ export async function POST(request: Request) {
       );
     }
 
+    // 2.5 Fetch learned merchant rules (best-effort)
+    let customRules: Record<string, any> | undefined;
+    try {
+      const rulesSnap = await db.doc('users/primary/settings/merchant_rules').get();
+      if (rulesSnap.exists) {
+        customRules = rulesSnap.data()?.rules;
+      }
+    } catch (err) {
+      console.error('Error loading merchant_rules in webhook:', err);
+    }
+
     // Determine Argentina local date (UTC-3)
     const nowAR = new Date(Date.now() - 3 * 60 * 60 * 1000);
     const todayStr = nowAR.toISOString().split('T')[0];
@@ -172,7 +183,7 @@ export async function POST(request: Request) {
     if (typeof body.text === 'string' && body.text.trim() && !body.merchant && !body.amount) {
       const mentionsUSD = /\b(?:u\$s|usd|d[oó]lares?|dol)\b/i.test(body.text);
       const mepRate = mentionsUSD ? await fetchDolarMepRate() : undefined;
-      const parsed = parseRawKeepText(body.text, mepRate);
+      const parsed = parseRawKeepText(body.text, mepRate, customRules);
 
       if (parsed.length === 0) {
         return NextResponse.json(
@@ -212,7 +223,7 @@ export async function POST(request: Request) {
       }
 
       const title = rawTitle.charAt(0).toUpperCase() + rawTitle.slice(1);
-      const inferred = inferCategoryAndMethod(title);
+      const inferred = inferCategoryAndMethod(title, customRules);
       const cardName = body.card ? body.card.toString().trim() : undefined;
       const finalMethod: PaymentMethod = body.method || mapCardToMethod(cardName, inferred.method);
       const walletNote = cardName ? `📲 Apple Pay (${cardName})` : '📲 Apple Pay';
