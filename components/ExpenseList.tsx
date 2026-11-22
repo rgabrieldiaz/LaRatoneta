@@ -46,6 +46,7 @@ export function ExpenseList({ expenses, onDeleteExpense, onUpdateExpense }: Expe
   const [filterCurrency, setFilterCurrency] = useState<'ALL' | 'ARS' | 'USD'>('ALL');
   const [filterCategory, setFilterCategory] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState<'DATE_DESC' | 'DATE_ASC' | 'AMOUNT_DESC' | 'AMOUNT_ASC'>('DATE_DESC');
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
 
@@ -83,8 +84,20 @@ export function ExpenseList({ expenses, onDeleteExpense, onUpdateExpense }: Expe
         if (!matchTitle && !matchCat && !matchMethod && !matchNote && !matchAmount) return false;
       }
       return true;
+    }).sort((a, b) => {
+      switch (sortBy) {
+        case 'AMOUNT_DESC':
+          return b.amount - a.amount;
+        case 'AMOUNT_ASC':
+          return a.amount - b.amount;
+        case 'DATE_ASC':
+          return a.date.localeCompare(b.date);
+        case 'DATE_DESC':
+        default:
+          return b.date.localeCompare(a.date);
+      }
     });
-  }, [expenses, filterCurrency, filterCategory, searchQuery]);
+  }, [expenses, filterCurrency, filterCategory, searchQuery, sortBy]);
 
   const getCategoryIcon = (cat: Category, method: PaymentMethod) => {
     if (method === 'SUBE') return <Bus className="w-5 h-5 text-black" />;
@@ -160,16 +173,30 @@ export function ExpenseList({ expenses, onDeleteExpense, onUpdateExpense }: Expe
           <span>LISTADO DE GASTOS ({filtered.length})</span>
         </h3>
 
-        {/* Search input (larger, easier to tap) */}
-        <div className="relative">
-          <Search className="w-5 h-5 absolute left-3 top-3 text-slate-500" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Buscar por chino, uber, farmacia..."
-            className="w-full sm:w-72 h-11 pl-10 pr-4 bg-white border-[2.5px] border-black rounded-lg text-sm font-bold shadow-[2px_2px_0px_#000] focus:outline-none"
-          />
+        {/* Search input & Sort selector */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+          <div className="relative">
+            <Search className="w-5 h-5 absolute left-3 top-3 text-slate-500" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Buscar por chino, uber, farmacia..."
+              className="w-full sm:w-64 h-11 pl-10 pr-4 bg-white border-[2.5px] border-black rounded-lg text-sm font-bold shadow-[2px_2px_0px_#000] focus:outline-none"
+            />
+          </div>
+
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as any)}
+            aria-label="Ordenar gastos"
+            className="h-11 px-3 bg-white border-[2.5px] border-black rounded-lg text-xs sm:text-sm font-black text-black shadow-[2px_2px_0px_#000] cursor-pointer focus:outline-none"
+          >
+            <option value="DATE_DESC">📅 Más recientes</option>
+            <option value="DATE_ASC">📅 Más antiguos</option>
+            <option value="AMOUNT_DESC">💰 Mayor valor</option>
+            <option value="AMOUNT_ASC">🪙 Menor valor</option>
+          </select>
         </div>
       </div>
 
