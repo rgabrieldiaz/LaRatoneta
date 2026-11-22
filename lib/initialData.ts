@@ -343,36 +343,12 @@ export const INITIAL_EXPENSES: Expense[] = [
     "title": "Suscripción Tarjeta (0,99 USD)",
     "amount": 1485,
     "currency": "ARS",
-    "category": "Resúmenes Tarjeta",
+    "category": "Cuidado & Varios",
     "method": "CREDITO",
     "date": "2026-11-13",
     "isConfirmed": true,
     "source": "KEEP_BATCH",
-    "note": "Equivalente en ARS (0,99 USD aprox)"
-  },
-  {
-    "id": "31",
-    "title": "Tarjeta visa",
-    "amount": 202399,
-    "currency": "ARS",
-    "category": "Resúmenes Tarjeta",
-    "method": "CREDITO",
-    "date": "2026-11-13",
-    "isConfirmed": true,
-    "source": "KEEP_BATCH",
-    "note": "Resumen tarjeta de crédito"
-  },
-  {
-    "id": "32",
-    "title": "Tarjeta Amex",
-    "amount": 172,
-    "currency": "ARS",
-    "category": "Resúmenes Tarjeta",
-    "method": "CREDITO",
-    "date": "2026-11-13",
-    "isConfirmed": true,
-    "source": "KEEP_BATCH",
-    "note": "Resumen Amex en pesos"
+    "note": "Suscripción digital (0,99 USD aprox)"
   },
   {
     "id": "33",
