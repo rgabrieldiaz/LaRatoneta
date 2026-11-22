@@ -247,6 +247,14 @@ export const DEFAULT_SALARY_CONFIG: SalaryConfig = {
   monthlyOverrides: {
     '2026-11': 1200000,
   },
+  history: [
+    {
+      id: 'sal-2026-11',
+      effectiveMonth: '2026-11',
+      amount: 1200000,
+      note: 'Sueldo Noviembre 2026',
+    },
+  ],
 };
 
 export function subscribeToSalary(userId: string, callback: (config: SalaryConfig) => void) {

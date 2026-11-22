@@ -95,7 +95,7 @@ export function HeroStats({
             title="Editar sueldo o cargar aumento paritario"
           >
             <Briefcase className="w-4 h-4 text-black" />
-            <span>SUELDO: {formatARS(salaryARS)}</span>
+            <span>{monthLabel.toLowerCase().includes('histórico') ? 'SUELDO ACUM.:' : 'SUELDO:'} {formatARS(salaryARS)}</span>
             <Edit3 className="w-3.5 h-3.5 text-black ml-1" />
           </button>
         )}
@@ -125,7 +125,7 @@ export function HeroStats({
       <div className="bg-[#FFF9D2] border-[2.5px] border-black rounded-xl p-4 space-y-2.5 shadow-[3px_3px_0px_#000]">
         <div className="flex items-center justify-between text-xs sm:text-sm font-black flex-wrap gap-2">
           <span className="text-slate-900">
-            💼 SUELDO {formatARS(salaryARS)} ({salaryPct}% GASTADO)
+            💼 {monthLabel.toLowerCase().includes('histórico') ? 'SUELDO TOTAL ACUMULADO' : 'SUELDO'} {formatARS(salaryARS)} ({salaryPct}% GASTADO)
           </span>
           <span className={`px-2.5 py-0.5 rounded border border-black shadow-[1px_1px_0px_#000] font-black ${
             isOverBudget ? 'bg-[#FF5376] text-white' : 'bg-[#22C55E] text-black'

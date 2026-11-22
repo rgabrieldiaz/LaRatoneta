@@ -15,6 +15,7 @@ import { PrivateGate } from '../components/PrivateGate';
 import { SalaryModal } from '../components/SalaryModal';
 import { INITIAL_EXPENSES } from '../lib/initialData';
 import { Expense, SalaryConfig } from '../lib/types';
+import { getSalaryForMonth, buildUpdatedSalaryConfig } from '../lib/salaryUtils';
 import { 
   getAvailableMonths, 
   filterExpensesByMonth, 
@@ -134,15 +135,15 @@ export default function Home() {
     }
   }, [user, isAuthorized]);
 
-  // Active salary for selected month (with paritarias or custom monthly override)
-  const activeSalary = useMemo(() => {
-    return salaryConfig.monthlyOverrides?.[selectedMonthKey] ?? salaryConfig.baseSalary ?? 1200000;
-  }, [salaryConfig, selectedMonthKey]);
-
   // Months available based on actual expenses
   const availableMonths = useMemo(() => {
     return getAvailableMonths(expenses);
   }, [expenses]);
+
+  // Active salary for selected month (with paritarias timeline & historical preservation)
+  const activeSalary = useMemo(() => {
+    return getSalaryForMonth(salaryConfig, selectedMonthKey, availableMonths);
+  }, [salaryConfig, selectedMonthKey, availableMonths]);
 
   // Filtered expenses for active month
   const monthlyExpenses = useMemo(() => {
@@ -236,16 +237,10 @@ export default function Home() {
     }
   };
 
-  // Salary and Paritarias saving handler
-  const handleSaveSalary = async (amount: number, isParitaria: boolean) => {
-    const newConfig: SalaryConfig = {
-      baseSalary: isParitaria ? amount : (salaryConfig.baseSalary ?? amount),
-      monthlyOverrides: {
-        ...(salaryConfig.monthlyOverrides || {}),
-        [selectedMonthKey]: amount,
-      },
-      updatedAt: new Date().toISOString(),
-    };
+  // Salary and Paritarias saving handler preserving historical integrity
+  const handleSaveSalary = async (amount: number, isParitaria: boolean, note?: string) => {
+    const targetMonth = selectedMonthKey === 'ALL' ? (availableMonths[0] || '2026-11') : selectedMonthKey;
+    const newConfig = buildUpdatedSalaryConfig(salaryConfig, targetMonth, amount, isParitaria, note);
     setSalaryConfig(newConfig);
     if (user && isFirebaseConfigured) {
       try {

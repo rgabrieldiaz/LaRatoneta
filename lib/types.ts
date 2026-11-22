@@ -33,8 +33,17 @@ export interface Expense {
   note?: string;
 }
 
+export interface SalaryHistoryItem {
+  id: string;
+  effectiveMonth: string; // "YYYY-MM"
+  amount: number;
+  note?: string;
+  updatedAt?: string;
+}
+
 export interface SalaryConfig {
   baseSalary: number;
   monthlyOverrides: Record<string, number>;
+  history?: SalaryHistoryItem[];
   updatedAt?: string;
 }
