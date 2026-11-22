@@ -33,20 +33,12 @@ export function Navbar({
     <header className="sticky top-0 z-40 bg-[#FFE500] border-b-[3.5px] border-black px-4 py-3">
       <div className="max-w-5xl mx-auto flex flex-wrap items-center justify-between gap-3">
         {/* Brand */}
-        <div className="flex items-center gap-2">
-          <div className="bg-white border-[3px] border-black shadow-[3px_3px_0px_#000] px-3 py-1 rounded-lg flex items-center gap-2.5">
-            <img src="/ratita.svg" alt="Ratita Tierna" className="w-8 h-8 rounded shrink-0 object-contain" />
-            <div>
-              <span className="font-extrabold text-lg tracking-tight uppercase block leading-none">LA RATONETA</span>
-              <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">EXPENSE TRACKER 🧀</span>
-            </div>
-            <span className="bg-[#22C55E] text-black text-[10px] font-black px-1.5 py-0.5 rounded border border-black uppercase ml-1">
-              LIVE
+        <div className="flex items-center">
+          <div className="bg-white border-[3px] border-black shadow-[3px_3px_0px_#000] px-3.5 py-1.5 rounded-lg flex items-center gap-2.5">
+            <img src="/ratita.svg" alt="La Ratoneta" className="w-8 h-8 rounded shrink-0 object-contain" />
+            <span className="font-black text-lg sm:text-xl tracking-tight uppercase text-black leading-none">
+              LA RATONETA
             </span>
-          </div>
-
-          <div className="hidden sm:flex items-center px-2.5 py-1 bg-white border-[2px] border-black shadow-[2px_2px_0px_#000] rounded text-xs font-black uppercase tracking-tight">
-            {selectedMonthLabel.toUpperCase()} 🗓️
           </div>
         </div>
 

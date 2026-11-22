@@ -212,6 +212,17 @@ export default function Home() {
     }
   };
 
+  const handleUpdateExpense = async (updatedExpense: Expense) => {
+    setExpenses(prev => prev.map(e => (e.id === updatedExpense.id ? updatedExpense : e)));
+    if (user && isFirebaseConfigured) {
+      try {
+        await saveExpenseToFirestore(PRIMARY_LEDGER_ID, updatedExpense);
+      } catch (e) {
+        console.error('Error updating expense in Firestore:', e);
+      }
+    }
+  };
+
   const handleConfirmPending = async (expense: Expense) => {
     if (user && isFirebaseConfigured) {
       try {
@@ -376,7 +387,7 @@ export default function Home() {
             onClick={handleResetNovemberExpenses}
             className="bg-[#FFE500] text-black px-3 py-1 rounded-md border-[2px] border-black shadow-[2px_2px_0px_#fff] text-xs font-black uppercase hover:bg-white transition-all active:scale-95"
           >
-            🔄 Recargar los 70 gastos limpios de Noviembre
+            🔄 Sincronizar los 68 gastos limpios de Noviembre
           </button>
         </div>
       )}
@@ -424,6 +435,7 @@ export default function Home() {
         <ExpenseList
           expenses={monthlyExpenses}
           onDeleteExpense={handleDeleteExpense}
+          onUpdateExpense={handleUpdateExpense}
         />
       </main>
 
