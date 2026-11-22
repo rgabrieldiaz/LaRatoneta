@@ -78,11 +78,11 @@ export function parseRawKeepText(text: string): Expense[] {
 export function inferCategoryAndMethod(title: string): { category: Category; method: PaymentMethod } {
   const t = title.toLowerCase();
 
-  // Super & Chinos
+  // Supermercados (Chinos, Coto, Día, Carrefour, etc.)
   if (t.includes('chino') || t.includes('carrefour') || t.includes('coto') || t.includes('día') || t.includes('dia') || t.includes('supermercado')) {
     const isChino = t.includes('chino');
     return {
-      category: 'Super & Chinos',
+      category: 'Supermercados',
       method: isChino ? 'EFECTIVO' : 'DEBITO',
     };
   }

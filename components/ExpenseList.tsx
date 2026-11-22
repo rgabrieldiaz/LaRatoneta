@@ -56,7 +56,7 @@ export function ExpenseList({ expenses, onDeleteExpense }: ExpenseListProps) {
   const getCategoryIcon = (cat: Category, method: PaymentMethod) => {
     if (method === 'SUBE') return <Bus className="w-5 h-5 text-black" />;
     switch (cat) {
-      case 'Super & Chinos':
+      case 'Supermercados':
         return <Store className="w-5 h-5 text-black" />;
       case 'Comida & Salidas':
         return <Utensils className="w-5 h-5 text-black" />;
@@ -182,7 +182,7 @@ export function ExpenseList({ expenses, onDeleteExpense }: ExpenseListProps) {
         {[
           { label: '💵 Solo Efectivo', val: 'EFECTIVO' },
           { label: '📱 Solo Digital', val: 'DIGITAL' },
-          { label: '🥡 Super & Chinos', val: 'Super & Chinos' },
+          { label: '🛒 Supermercados', val: 'Supermercados' },
           { label: '🍕 Comida & Salidas', val: 'Comida & Salidas' },
           { label: '🥩 Carnicería & Frescos', val: 'Carnicería, Verdura & Frescos' },
           { label: '🥐 Panadería & Pastas', val: 'Panadería & Pastas' },

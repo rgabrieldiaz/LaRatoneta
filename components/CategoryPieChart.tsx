@@ -32,7 +32,7 @@ interface CategorySlice {
 }
 
 const CATEGORY_COLORS: Record<string, string> = {
-  'Super & Chinos': '#FF6B6B', // Coral
+  'Supermercados': '#FF6B6B', // Coral
   'Comida & Salidas': '#FF9F43', // Orange
   'Carnicería, Verdura & Frescos': '#2ECC71', // Green
   'Panadería & Pastas': '#FDCB6E', // Warm Gold
@@ -166,7 +166,7 @@ export function CategoryPieChart({ expenses, selectedMonthLabel }: CategoryPieCh
 
   const getCategoryIcon = (cat: Category) => {
     switch (cat) {
-      case 'Super & Chinos': return <Store className="w-3.5 h-3.5" />;
+      case 'Supermercados': return <Store className="w-3.5 h-3.5" />;
       case 'Comida & Salidas': return <Utensils className="w-3.5 h-3.5" />;
       case 'Transporte': return <Car className="w-3.5 h-3.5" />;
       case 'Hogar & Servicios': return <Home className="w-3.5 h-3.5" />;

@@ -10,7 +10,7 @@ export type PaymentMethod =
   | 'SUBE';
 
 export type Category = 
-  | 'Super & Chinos'
+  | 'Supermercados'
   | 'Comida & Salidas'
   | 'Carnicería, Verdura & Frescos'
   | 'Panadería & Pastas'

@@ -278,7 +278,7 @@ export default function Home() {
       title: picked.title,
       amount: picked.amount,
       currency: 'ARS',
-      category: 'Super & Chinos',
+      category: 'Supermercados',
       method: picked.method,
       date: new Date().toISOString().split('T')[0],
       isConfirmed: false,
