@@ -23,7 +23,7 @@ import {
   getDocs,
   Firestore 
 } from 'firebase/firestore';
-import { Expense, SalaryConfig } from './types';
+import { CategoryBudgets, Expense, SalaryConfig } from './types';
 import { INITIAL_EXPENSES } from './initialData';
 
 const firebaseConfig = {
@@ -280,4 +280,43 @@ export async function saveSalaryToFirestore(userId: string, config: SalaryConfig
   if (!db) return;
   const docRef = doc(db, 'users', userId, 'settings', 'salary');
   await setDoc(docRef, { ...config, updatedAt: new Date().toISOString() }, { merge: true });
+}
+
+/**
+ * Category Monthly Budgets / Threshold Alerts
+ */
+export function subscribeToCategoryBudgets(
+  userId: string,
+  callback: (budgets: CategoryBudgets) => void
+) {
+  if (!db) {
+    callback({});
+    return () => {};
+  }
+
+  const docRef = doc(db, 'users', userId, 'settings', 'budgets');
+  return onSnapshot(
+    docRef,
+    (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        callback((data?.limits || {}) as CategoryBudgets);
+      } else {
+        callback({});
+      }
+    },
+    (err) => {
+      console.warn('Category budgets sync note:', err?.message || err);
+      callback({});
+    }
+  );
+}
+
+export async function saveCategoryBudgetsToFirestore(
+  userId: string,
+  limits: CategoryBudgets
+): Promise<void> {
+  if (!db) return;
+  const docRef = doc(db, 'users', userId, 'settings', 'budgets');
+  await setDoc(docRef, { limits, updatedAt: new Date().toISOString() });
 }

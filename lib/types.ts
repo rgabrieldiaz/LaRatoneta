@@ -57,3 +57,5 @@ export interface SalaryConfig {
   incomes?: IncomeEntry[];
   updatedAt?: string;
 }
+
+export type CategoryBudgets = Partial<Record<Category, number>>;

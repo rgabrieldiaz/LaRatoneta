@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { Expense, Category } from '../lib/types';
+import { Expense, Category, CategoryBudgets } from '../lib/types';
 import { 
   PieChart as PieIcon, 
   Store, 
@@ -11,13 +11,14 @@ import {
   HeartPulse, 
   CreditCard, 
   ShoppingBag, 
-  Layers, 
-  DollarSign 
+  Target
 } from 'lucide-react';
 
 interface CategoryPieChartProps {
   expenses: Expense[];
   selectedMonthLabel: string;
+  categoryBudgets?: CategoryBudgets;
+  onOpenBudgetsModal?: () => void;
 }
 
 interface CategorySlice {
@@ -42,7 +43,12 @@ const CATEGORY_COLORS: Record<string, string> = {
   'Resúmenes Tarjeta': '#FF7675', // Rose/Red
 };
 
-export function CategoryPieChart({ expenses, selectedMonthLabel }: CategoryPieChartProps) {
+export function CategoryPieChart({
+  expenses,
+  selectedMonthLabel,
+  categoryBudgets = {},
+  onOpenBudgetsModal,
+}: CategoryPieChartProps) {
   const [currency, setCurrency] = useState<'ARS' | 'USD'>('ARS');
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
 
@@ -197,6 +203,17 @@ export function CategoryPieChart({ expenses, selectedMonthLabel }: CategoryPieCh
           </div>
         </div>
 
+        {onOpenBudgetsModal && (
+          <button
+            type="button"
+            onClick={onOpenBudgetsModal}
+            className="brutal-btn bg-[#FFF9D2] hover:bg-[#FFE500] text-black px-3 py-1.5 rounded-lg text-xs sm:text-sm font-black flex items-center gap-1.5 shadow-[2px_2px_0px_#000]"
+            title="Configurar topes mensuales por categoría"
+          >
+            <Target className="w-4 h-4 text-black" />
+            <span>Topes</span>
+          </button>
+        )}
       </div>
 
       {/* Main Content Area */}
@@ -335,6 +352,32 @@ export function CategoryPieChart({ expenses, selectedMonthLabel }: CategoryPieCh
                         {slice.count} compras
                       </span>
                     </div>
+
+                    {(() => {
+                      const limit = categoryBudgets[slice.category];
+                      if (!limit || limit <= 0) return null;
+                      const pct = Math.round((slice.amount / limit) * 100);
+                      const isExceeded = slice.amount >= limit;
+                      const isNear = !isExceeded && slice.amount >= limit * 0.8;
+
+                      return (
+                        <div className="mt-2 pt-1.5 border-t border-black/10">
+                          {isExceeded ? (
+                            <span className="inline-block px-2 py-0.5 bg-[#FF5376]/15 text-[#c81e45] border border-[#FF5376] rounded text-[11px] font-black">
+                              🚨 +{formatCurrency(slice.amount - limit)} sobre tope ({formatCurrency(limit)})
+                            </span>
+                          ) : isNear ? (
+                            <span className="inline-block px-2 py-0.5 bg-[#FFE500]/60 text-black border border-black/40 rounded text-[11px] font-black">
+                              ⚠️ {pct}% del tope ({formatCurrency(limit)})
+                            </span>
+                          ) : (
+                            <span className="text-[11px] font-bold text-slate-500">
+                              🎯 Tope: {formatCurrency(limit)} ({pct}%)
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </div>
                 );
               })}

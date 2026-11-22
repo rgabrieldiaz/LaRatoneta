@@ -13,8 +13,9 @@ import { KeepBatchModal } from '../components/KeepBatchModal';
 import { WebhookSettingsModal } from '../components/WebhookSettingsModal';
 import { PrivateGate } from '../components/PrivateGate';
 import { SalaryModal } from '../components/SalaryModal';
+import { CategoryBudgetsModal } from '../components/CategoryBudgetsModal';
 import { INITIAL_EXPENSES } from '../lib/initialData';
-import { Expense, IncomeEntry, SalaryConfig } from '../lib/types';
+import { CategoryBudgets, Expense, IncomeEntry, SalaryConfig } from '../lib/types';
 import {
   getSalaryForMonth,
   upsertIncomeInConfig,
@@ -42,6 +43,8 @@ import {
   resetAndSeedExpenses,
   subscribeToSalary,
   saveSalaryToFirestore,
+  subscribeToCategoryBudgets,
+  saveCategoryBudgetsToFirestore,
   DEFAULT_SALARY_CONFIG,
   PRIMARY_LEDGER_ID,
   AUTHORIZED_EMAILS
@@ -57,6 +60,9 @@ export default function Home() {
   const [isIntegrationsOpen, setIsIntegrationsOpen] = useState(false);
   const [isSalaryModalOpen, setIsSalaryModalOpen] = useState(false);
   const [salaryConfig, setSalaryConfig] = useState<SalaryConfig>(DEFAULT_SALARY_CONFIG);
+  const [isBudgetsModalOpen, setIsBudgetsModalOpen] = useState(false);
+  const [categoryBudgets, setCategoryBudgets] = useState<CategoryBudgets>({});
+  const [budgetAlertToast, setBudgetAlertToast] = useState<{ message: string; isOver: boolean } | null>(null);
   const [lastDeleted, setLastDeleted] = useState<{ expense: Expense; secondsLeft: number } | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
 
@@ -131,15 +137,28 @@ export default function Home() {
     }
   }, [user, isAuthorized]);
 
-  // 3. Load and Sync Salary from shared Firestore ledger
+  // 3. Load and Sync Salary & Category Budgets from shared Firestore ledger
   useEffect(() => {
     if (user && isAuthorized && isFirebaseConfigured) {
       const unsubSalary = subscribeToSalary(PRIMARY_LEDGER_ID, (config) => {
         setSalaryConfig(config || DEFAULT_SALARY_CONFIG);
       });
-      return () => unsubSalary();
+      const unsubBudgets = subscribeToCategoryBudgets(PRIMARY_LEDGER_ID, (budgets) => {
+        setCategoryBudgets(budgets || {});
+      });
+      return () => {
+        unsubSalary();
+        unsubBudgets();
+      };
     }
   }, [user, isAuthorized]);
+
+  // Auto-dismiss category budget alert toast after 4 seconds
+  useEffect(() => {
+    if (!budgetAlertToast) return;
+    const t = setTimeout(() => setBudgetAlertToast(null), 4000);
+    return () => clearTimeout(t);
+  }, [budgetAlertToast]);
 
   // Months available based on actual expenses
   const availableMonths = useMemo(() => {
@@ -183,6 +202,34 @@ export default function Home() {
 
   // Handlers for Expenses
   const handleAddExpense = async (expense: Expense) => {
+    // Check if this expense crosses 80% or 100% of a configured category budget
+    const limit = categoryBudgets[expense.category];
+    if (limit && limit > 0 && expense.currency === 'ARS') {
+      const expMonth = expense.date.slice(0, 7);
+      const prevTotal = expenses
+        .filter(
+          (e) =>
+            e.currency === 'ARS' &&
+            e.category === expense.category &&
+            e.date.startsWith(expMonth)
+        )
+        .reduce((sum, e) => sum + e.amount, 0);
+      const nextTotal = prevTotal + expense.amount;
+
+      if (prevTotal < limit && nextTotal >= limit) {
+        setBudgetAlertToast({
+          isOver: true,
+          message: `🚨 ${expense.category} superó su tope ($${nextTotal.toLocaleString('es-AR')} / $${limit.toLocaleString('es-AR')})`,
+        });
+      } else if (prevTotal < limit * 0.8 && nextTotal >= limit * 0.8) {
+        const pct = Math.round((nextTotal / limit) * 100);
+        setBudgetAlertToast({
+          isOver: false,
+          message: `⚠️ ${expense.category} llegó al ${pct}% de su tope ($${nextTotal.toLocaleString('es-AR')} / $${limit.toLocaleString('es-AR')})`,
+        });
+      }
+    }
+
     if (user && isFirebaseConfigured) {
       try {
         await saveExpenseToFirestore(PRIMARY_LEDGER_ID, expense);
@@ -191,6 +238,17 @@ export default function Home() {
       }
     } else {
       setExpenses(prev => [expense, ...prev]);
+    }
+  };
+
+  const handleSaveBudgets = async (budgets: CategoryBudgets) => {
+    setCategoryBudgets(budgets);
+    if (user && isFirebaseConfigured) {
+      try {
+        await saveCategoryBudgetsToFirestore(PRIMARY_LEDGER_ID, budgets);
+      } catch (e) {
+        console.error('Error saving category budgets to Firestore:', e);
+      }
     }
   };
 
@@ -471,6 +529,8 @@ export default function Home() {
         <CategoryPieChart
           expenses={monthlyExpenses}
           selectedMonthLabel={selectedMonthLabel}
+          categoryBudgets={categoryBudgets}
+          onOpenBudgetsModal={() => setIsBudgetsModalOpen(true)}
         />
 
         {/* Full Expenses Ledger with Filter chips, Search, Edit & Delete */}
@@ -504,6 +564,35 @@ export default function Home() {
         isOpen={isIntegrationsOpen}
         onClose={() => setIsIntegrationsOpen(false)}
       />
+
+      {/* Category Budgets / Limits Modal */}
+      <CategoryBudgetsModal
+        isOpen={isBudgetsModalOpen}
+        onClose={() => setIsBudgetsModalOpen(false)}
+        expenses={monthlyExpenses}
+        categoryBudgets={categoryBudgets}
+        onSaveBudgets={handleSaveBudgets}
+        monthLabel={selectedMonthLabel}
+      />
+
+      {/* Non-invasive 4-second Category Budget Threshold Toast */}
+      {budgetAlertToast && !lastDeleted && (
+        <div
+          className={`fixed bottom-5 left-1/2 -translate-x-1/2 z-50 w-[92%] max-w-md border-[3px] border-black shadow-[5px_5px_0px_#000] rounded-xl px-4 py-3 flex items-center justify-between gap-3 ${
+            budgetAlertToast.isOver ? 'bg-[#FF5376] text-white' : 'bg-[#FFE500] text-black'
+          }`}
+        >
+          <span className="text-xs sm:text-sm font-black leading-snug">
+            {budgetAlertToast.message}
+          </span>
+          <button
+            onClick={() => setBudgetAlertToast(null)}
+            className="text-xs font-black underline shrink-0"
+          >
+            OK
+          </button>
+        </div>
+      )}
 
       {/* 5-second Undo Delete Toast */}
       {lastDeleted && (
