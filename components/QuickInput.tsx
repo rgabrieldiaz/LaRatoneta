@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { parseRawKeepText } from '../lib/keepParser';
+import { fetchDolarMepRate, FALLBACK_DOLAR_MEP } from '../lib/dolarApi';
 import { Category, Expense, PaymentMethod } from '../lib/types';
 import { Zap, Mic, Plus, ClipboardList, SlidersHorizontal } from 'lucide-react';
 
@@ -31,52 +32,67 @@ export function QuickInput({ onAddExpense, onOpenBatchModal }: QuickInputProps) 
   const [mode, setMode] = useState<'QUICK' | 'MANUAL'>('QUICK');
   const [inputVal, setInputVal] = useState('');
   const [isListening, setIsListening] = useState(false);
+  const [mepRate, setMepRate] = useState<number>(FALLBACK_DOLAR_MEP);
 
   // Manual mode states
   const [manualTitle, setManualTitle] = useState('');
   const [manualAmount, setManualAmount] = useState('');
+  const [manualCurrency, setManualCurrency] = useState<'ARS' | 'USD'>('ARS');
   const [manualCategory, setManualCategory] = useState<Category>('Supermercados');
   const [manualMethod, setManualMethod] = useState<PaymentMethod>('CUENTA');
   const [manualDate, setManualDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [manualNote, setManualNote] = useState('');
 
+  useEffect(() => {
+    fetchDolarMepRate().then((rate) => setMepRate(rate));
+  }, []);
+
   const handleQuickSubmit = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!inputVal.trim()) return;
 
-    const parsedList = parseRawKeepText(inputVal);
+    const parsedList = parseRawKeepText(inputVal, mepRate);
     if (parsedList.length > 0) {
       onAddExpense(parsedList[0]);
       setInputVal('');
     } else {
-      alert('Ingresá concepto y monto (ej: "chino 4500 efectivo" o "uber 3800")');
+      alert('Ingresá concepto y monto (ej: "chino 4500 efectivo" o "icloud 0,99 dolares")');
     }
   };
 
   const handleManualSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const numericAmount = parseFloat(manualAmount);
+    const numericAmount = parseFloat(manualAmount.replace(',', '.'));
     if (!manualTitle.trim() || isNaN(numericAmount) || numericAmount <= 0) {
-      alert('Completá el concepto y un monto válido en pesos.');
+      alert('Completá el concepto y un monto válido.');
       return;
     }
+
+    const finalAmountARS =
+      manualCurrency === 'USD' ? Math.round(numericAmount * mepRate) : numericAmount;
+    const usdNote =
+      manualCurrency === 'USD'
+        ? `🇺🇸 U$S ${numericAmount.toFixed(2)} (Dólar MEP $${Math.round(mepRate).toLocaleString('es-AR')})`
+        : '';
+    const combinedNote = [usdNote, manualNote.trim()].filter(Boolean).join(' • ');
 
     const newExpense: Expense = {
       id: `manual-${Date.now()}`,
       title: manualTitle.trim().charAt(0).toUpperCase() + manualTitle.trim().slice(1),
-      amount: numericAmount,
+      amount: finalAmountARS,
       currency: 'ARS',
       category: manualCategory,
       method: manualMethod,
       date: manualDate,
       isConfirmed: true,
       source: 'MANUAL',
-      ...(manualNote.trim() ? { note: manualNote.trim() } : {}),
+      ...(combinedNote ? { note: combinedNote } : {}),
     };
 
     onAddExpense(newExpense);
     setManualTitle('');
     setManualAmount('');
+    setManualCurrency('ARS');
     setManualNote('');
   };
 
@@ -235,17 +251,35 @@ export function QuickInput({ onAddExpense, onOpenBatchModal }: QuickInputProps) 
             </div>
 
             <div>
-              <label className="block text-xs font-black uppercase text-slate-700 mb-1">Monto ($ ARS)</label>
-              <input
-                type="number"
-                step="1"
-                min="1"
-                value={manualAmount}
-                onChange={(e) => setManualAmount(e.target.value)}
-                placeholder="15000"
-                className="w-full h-11 px-3 bg-[#F8F8F8] border-[2px] border-black rounded-lg text-base font-black focus:outline-none focus:bg-white"
-                required
-              />
+              <label className="block text-xs font-black uppercase text-slate-700 mb-1">
+                Monto ({manualCurrency === 'USD' ? 'U$S' : '$ ARS'})
+              </label>
+              <div className="flex gap-1.5">
+                <input
+                  type="number"
+                  step={manualCurrency === 'USD' ? '0.01' : '1'}
+                  min="0.01"
+                  value={manualAmount}
+                  onChange={(e) => setManualAmount(e.target.value)}
+                  placeholder={manualCurrency === 'USD' ? '0.99' : '15000'}
+                  className="w-full h-11 px-3 bg-[#F8F8F8] border-[2px] border-black rounded-lg text-base font-black focus:outline-none focus:bg-white"
+                  required
+                />
+                <select
+                  value={manualCurrency}
+                  onChange={(e) => setManualCurrency(e.target.value as 'ARS' | 'USD')}
+                  aria-label="Moneda"
+                  className="h-11 px-2 bg-[#FFE500] border-[2px] border-black rounded-lg text-xs font-black cursor-pointer focus:outline-none shrink-0"
+                >
+                  <option value="ARS">$ ARS</option>
+                  <option value="USD">U$S</option>
+                </select>
+              </div>
+              {manualCurrency === 'USD' && parseFloat(manualAmount) > 0 && (
+                <p className="text-[11px] font-bold text-slate-700 mt-1">
+                  ≈ ${Math.round(parseFloat(manualAmount) * mepRate).toLocaleString('es-AR')} ARS (MEP ${Math.round(mepRate).toLocaleString('es-AR')})
+                </p>
+              )}
             </div>
           </div>
 

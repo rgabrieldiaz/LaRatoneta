@@ -1,3 +1,4 @@
+import { FALLBACK_DOLAR_MEP } from './dolarApi';
 import { Category, Expense, PaymentMethod } from './types';
 
 interface MethodOverrideResult {
@@ -44,10 +45,14 @@ function extractExplicitMethod(raw: string): MethodOverrideResult {
 }
 
 /**
- * Strips spoken filler words and currency terms ("pesos", "$", "pagué en el", etc.)
+ * Strips spoken filler words and currency terms ("pesos", "dólares", "$", "pagué en el", etc.)
  */
-function cleanSpokenNoise(text: string): string {
-  return text
+function cleanSpokenNoise(text: string): { cleaned: string; isUSD: boolean } {
+  const usdRegex = /\b(?:u\$s|usd|d[oó]lares?|dol)\b/gi;
+  const isUSD = usdRegex.test(text);
+  const cleaned = text
+    .replace(/u\$s/gi, ' ')
+    .replace(usdRegex, ' ')
     .replace(/\$/g, ' ')
     .replace(/\b(pesos?|ars)\b/gi, ' ')
     .replace(/^\s*(?:pagu[eé]|pag[oó]|gast[eé]|compr[eé]|fui)\s+(?:en\s+el\s+|en\s+la\s+|en\s+|al\s+|a\s+la\s+|a\s+)?/i, '')
@@ -55,9 +60,14 @@ function cleanSpokenNoise(text: string): string {
     .replace(/\s+(?:con|en)\s*$/i, '')
     .replace(/\s+/g, ' ')
     .trim();
+
+  return { cleaned, isUSD };
 }
 
-export function parseRawKeepText(text: string): Expense[] {
+export function parseRawKeepText(
+  text: string,
+  dolarMepRate: number = FALLBACK_DOLAR_MEP
+): Expense[] {
   const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
   const expenses: Expense[] = [];
 
@@ -66,20 +76,26 @@ export function parseRawKeepText(text: string): Expense[] {
   for (let i = 0; i < lines.length; i++) {
     const rawLine = lines[i];
     const { cleanedText, explicitMethod, explicitNote } = extractExplicitMethod(rawLine);
-    const noNoise = cleanSpokenNoise(cleanedText);
+    const { cleaned: noNoise, isUSD } = cleanSpokenNoise(cleanedText);
 
-    // Find the amount anywhere in the sentence (e.g. "20000", "20.000", "14520,50")
+    // Find the amount anywhere in the sentence (e.g. "20000", "20.000", "0,99", "0.99")
     const numMatch = noNoise.match(/(?:^|\s)([\d]+(?:[\.,]\d{3})*(?:,\d{1,2})?|\d+(?:[.,]\d+)?)(?=\s|$)/);
     if (!numMatch) continue;
 
     const rawAmountStr = numMatch[1];
-    // Remove thousands dots and convert comma decimal to dot
-    const normalizedAmount = rawAmountStr.includes(',')
-      ? rawAmountStr.replace(/\./g, '').replace(',', '.')
-      : rawAmountStr.replace(/\./g, '');
-    const amount = parseFloat(normalizedAmount);
+    let parsedNumber: number;
+    if (isUSD) {
+      // For USD, both "0,99" and "0.99" are decimal separators
+      parsedNumber = parseFloat(rawAmountStr.replace(',', '.'));
+    } else {
+      parsedNumber = rawAmountStr.includes(',')
+        ? parseFloat(rawAmountStr.replace(/\./g, '').replace(',', '.'))
+        : parseFloat(rawAmountStr.replace(/\./g, ''));
+    }
 
-    if (isNaN(amount) || amount <= 0) continue;
+    if (isNaN(parsedNumber) || parsedNumber <= 0) continue;
+
+    const amount = isUSD ? Math.round(parsedNumber * dolarMepRate) : parsedNumber;
 
     const rawTitle = noNoise
       .replace(numMatch[0], ' ')
@@ -91,8 +107,12 @@ export function parseRawKeepText(text: string): Expense[] {
     const title = rawTitle.charAt(0).toUpperCase() + rawTitle.slice(1);
     const inferred = inferCategoryAndMethod(rawTitle);
 
-        const finalMethod = explicitMethod ?? inferred.method;
-        const finalNote = explicitMethod ? explicitNote : inferred.note;
+    const finalMethod = explicitMethod ?? inferred.method;
+    const baseNote = explicitMethod ? explicitNote : inferred.note;
+    const usdNote = isUSD
+      ? `🇺🇸 U$S ${parsedNumber.toFixed(2)} (Dólar MEP $${Math.round(dolarMepRate).toLocaleString('es-AR')})`
+      : undefined;
+    const finalNote = [usdNote, baseNote].filter(Boolean).join(' • ') || undefined;
 
     expenses.push({
       id: `parsed-${Date.now()}-${i}`,
@@ -279,7 +299,26 @@ export function inferCategoryAndMethod(title: string): {
     };
   }
 
-  // 7. Default: Cuidado & Varios
+  // 7. Suscripciones digitales (iCloud, Netflix, Spotify, Google, etc.)
+  if (
+    t.includes('icloud') ||
+    t.includes('netflix') ||
+    t.includes('spotify') ||
+    t.includes('google') ||
+    t.includes('youtube') ||
+    t.includes('chatgpt') ||
+    t.includes('disney') ||
+    t.includes('amazon') ||
+    t.includes('suscripcion') ||
+    t.includes('suscripción')
+  ) {
+    return {
+      category: 'Cuidado & Varios',
+      method: 'CREDITO',
+    };
+  }
+
+  // 8. Default: Cuidado & Varios
   return {
     category: 'Cuidado & Varios',
     method: 'EFECTIVO',

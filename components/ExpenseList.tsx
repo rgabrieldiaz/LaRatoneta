@@ -257,10 +257,16 @@ export function ExpenseList({ expenses, onDeleteExpense, onUpdateExpense }: Expe
                     </span>
                     {getMethodBadge(item.method, item.currency)}
                   </div>
-                  <div className="flex items-center gap-2 text-xs sm:text-sm font-bold text-slate-600">
+                  <div className="flex items-center gap-2 text-xs sm:text-sm font-bold text-slate-600 flex-wrap">
                     <span>{item.category}</span>
                     <span>•</span>
                     <span className="font-mono">{item.date}</span>
+                    {item.note && (
+                      <>
+                        <span>•</span>
+                        <span className="text-slate-500 font-semibold">{item.note}</span>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
