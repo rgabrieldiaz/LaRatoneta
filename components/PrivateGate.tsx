@@ -6,7 +6,7 @@ import { ShieldCheck, Lock, LogOut, ArrowRight } from 'lucide-react';
 
 interface PrivateGateProps {
   user: User | null;
-  authorizedEmail: string;
+  authorizedEmails: string[];
   onLogin: () => void;
   onLogout: () => void;
   isConfigured: boolean;
@@ -14,11 +14,15 @@ interface PrivateGateProps {
 
 export function PrivateGate({
   user,
-  authorizedEmail,
+  authorizedEmails,
   onLogin,
   onLogout,
 }: PrivateGateProps) {
-  const isWrongUser = user && user.email?.toLowerCase() !== authorizedEmail.toLowerCase();
+  const isWrongUser = Boolean(
+    user && 
+    user.email && 
+    !authorizedEmails.map(e => e.toLowerCase()).includes(user.email.toLowerCase())
+  );
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#FFE500] p-4 sm:p-6">
@@ -58,11 +62,11 @@ export function PrivateGate({
             <span>BÓVEDA DE ACCESO RESTRINGIDO</span>
           </div>
           <p className="text-xs text-slate-700 leading-relaxed">
-            Esta es una aplicación privada para el registro y análisis de consumos personales. Para proteger la intimidad de los datos, el acceso está reservado exclusivamente a la cuenta autorizada.
+            Esta es una aplicación privada para el registro y análisis de consumos personales. Para proteger la intimidad de los datos, el acceso está reservado exclusivamente a las cuentas autorizadas.
           </p>
         </div>
 
-        {/* Unauthorized user state (Never leaks the authorized email!) */}
+        {/* Unauthorized user state (Never leaks the authorized emails!) */}
         {isWrongUser ? (
           <div className="bg-[#FF5376]/10 border-[2px] border-[#FF5376] p-4 rounded-lg space-y-3 text-left">
             <p className="text-xs font-black text-[#FF5376] uppercase flex items-center gap-1.5">

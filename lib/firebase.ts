@@ -38,6 +38,12 @@ export const isFirebaseConfigured = Boolean(
   process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID
 );
 
+export const PRIMARY_LEDGER_ID = 'primary';
+export const AUTHORIZED_EMAILS = [
+  'gretelfabregas@gmail.com',
+  'gabrieldiaz81@gmail.com'
+];
+
 let app: FirebaseApp | null = null;
 let auth: Auth | null = null;
 let db: Firestore | null = null;

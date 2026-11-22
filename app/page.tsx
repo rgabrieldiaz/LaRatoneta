@@ -31,10 +31,10 @@ import {
   confirmPendingInFirestore,
   rejectPendingInFirestore,
   bulkImportToFirestore,
-  seedInitialExpensesIfEmpty
+  seedInitialExpensesIfEmpty,
+  PRIMARY_LEDGER_ID,
+  AUTHORIZED_EMAILS
 } from '../lib/firebase';
-
-const TARGET_EMAIL = process.env.NEXT_PUBLIC_AUTHORIZED_EMAIL || 'gretelfabregas@gmail.com';
 
 export default function Home() {
   const [user, setUser] = useState<User | null>(null);
@@ -48,11 +48,17 @@ export default function Home() {
   // Month navigation state
   const [selectedMonthKey, setSelectedMonthKey] = useState<string>('2026-11');
 
-  // Authorization check (Strict privacy: Only Gretel can access her financial ledger)
+  // Authorization check (Gretel as primary owner + Gabo as developer/admin)
   const isAuthorized = Boolean(
     user && 
     user.email && 
-    user.email.toLowerCase() === TARGET_EMAIL.toLowerCase()
+    AUTHORIZED_EMAILS.map(e => e.toLowerCase()).includes(user.email.toLowerCase())
+  );
+
+  const isDevUser = Boolean(
+    user && 
+    user.email && 
+    user.email.toLowerCase() === 'gabrieldiaz81@gmail.com'
   );
 
   // 1. Listen to Firebase Auth state
@@ -63,12 +69,13 @@ export default function Home() {
 
       if (
         currentUser && 
-        currentUser.email?.toLowerCase() === TARGET_EMAIL.toLowerCase() && 
+        currentUser.email &&
+        AUTHORIZED_EMAILS.map(e => e.toLowerCase()).includes(currentUser.email.toLowerCase()) && 
         isFirebaseConfigured
       ) {
-        // Automatically seed her 70 initial expenses if her Firestore database is empty
+        // Automatically seed the 70 initial expenses if the shared Firestore database is empty
         try {
-          await seedInitialExpensesIfEmpty(currentUser.uid, INITIAL_EXPENSES);
+          await seedInitialExpensesIfEmpty(PRIMARY_LEDGER_ID, INITIAL_EXPENSES);
         } catch (e) {
           console.error('Error seeding initial expenses to Firestore:', e);
         }
@@ -78,15 +85,15 @@ export default function Home() {
     return () => unsubscribe();
   }, []);
 
-  // 2. Load and Sync Expenses from Firestore (ONLY when Gretel is authorized)
+  // 2. Load and Sync Expenses from shared Firestore ledger (ONLY when authorized)
   useEffect(() => {
     if (user && isAuthorized && isFirebaseConfigured) {
-      const unsubExpenses = subscribeToUserExpenses(user.uid, (cloudExpenses) => {
+      const unsubExpenses = subscribeToUserExpenses(PRIMARY_LEDGER_ID, (cloudExpenses) => {
         setExpenses(cloudExpenses);
         setIsLoaded(true);
       });
 
-      const unsubPending = subscribeToUserPending(user.uid, (cloudPending) => {
+      const unsubPending = subscribeToUserPending(PRIMARY_LEDGER_ID, (cloudPending) => {
         setPendingExpenses(cloudPending);
       });
 
@@ -139,7 +146,7 @@ export default function Home() {
   const handleAddExpense = async (expense: Expense) => {
     if (user && isFirebaseConfigured) {
       try {
-        await saveExpenseToFirestore(user.uid, expense);
+        await saveExpenseToFirestore(PRIMARY_LEDGER_ID, expense);
       } catch (e) {
         console.error('Error saving to Firestore:', e);
       }
@@ -151,7 +158,7 @@ export default function Home() {
   const handleImportExpenses = async (newExpenses: Expense[]) => {
     if (user && isFirebaseConfigured) {
       try {
-        await bulkImportToFirestore(user.uid, newExpenses);
+        await bulkImportToFirestore(PRIMARY_LEDGER_ID, newExpenses);
       } catch (e) {
         console.error('Error bulk importing to Firestore:', e);
       }
@@ -163,7 +170,7 @@ export default function Home() {
   const handleDeleteExpense = async (id: string) => {
     if (user && isFirebaseConfigured) {
       try {
-        await deleteExpenseFromFirestore(user.uid, id);
+        await deleteExpenseFromFirestore(PRIMARY_LEDGER_ID, id);
       } catch (e) {
         console.error('Error deleting from Firestore:', e);
       }
@@ -175,7 +182,7 @@ export default function Home() {
   const handleConfirmPending = async (expense: Expense) => {
     if (user && isFirebaseConfigured) {
       try {
-        await confirmPendingInFirestore(user.uid, expense);
+        await confirmPendingInFirestore(PRIMARY_LEDGER_ID, expense);
       } catch (e) {
         console.error('Error confirming pending in Firestore:', e);
       }
@@ -188,7 +195,7 @@ export default function Home() {
   const handleRejectPending = async (id: string) => {
     if (user && isFirebaseConfigured) {
       try {
-        await rejectPendingInFirestore(user.uid, id);
+        await rejectPendingInFirestore(PRIMARY_LEDGER_ID, id);
       } catch (e) {
         console.error('Error rejecting pending in Firestore:', e);
       }
@@ -220,7 +227,7 @@ export default function Home() {
 
     if (user && isFirebaseConfigured) {
       try {
-        await saveExpenseToFirestore(user.uid, newPending);
+        await saveExpenseToFirestore(PRIMARY_LEDGER_ID, newPending);
       } catch (e) {
         console.error('Error adding pending to Firestore:', e);
       }
@@ -269,12 +276,12 @@ export default function Home() {
     );
   }
 
-  // 2. Strict Privacy Gate: If user is not authenticated or not Gretel, lock access!
+  // 2. Strict Privacy Gate: If user is not authenticated or not in authorized list, lock access!
   if (!isAuthorized) {
     return (
       <PrivateGate
         user={user}
-        authorizedEmail={TARGET_EMAIL}
+        authorizedEmails={AUTHORIZED_EMAILS}
         onLogin={handleLogin}
         onLogout={handleLogout}
         isConfigured={isFirebaseConfigured}
@@ -282,7 +289,7 @@ export default function Home() {
     );
   }
 
-  // 3. Authenticated & Authorized Dashboard for Gretel
+  // 3. Authenticated & Authorized Dashboard (Gretel & Gabo)
   return (
     <div className="min-h-screen flex flex-col bg-[#FFE500] pb-16">
       {/* Navigation Bar */}
@@ -298,6 +305,13 @@ export default function Home() {
         isConfigured={isFirebaseConfigured}
         selectedMonthLabel={selectedMonthLabel}
       />
+
+      {/* Developer notice banner if Gabo is inspecting */}
+      {isDevUser && (
+        <div className="bg-black text-[#FFE500] px-4 py-1.5 text-xs font-black text-center uppercase tracking-wider flex items-center justify-center gap-2">
+          <span>🛠️ MODO DESARROLLADOR / ADMIN: Sesión activa como {user?.email}</span>
+        </div>
+      )}
 
       {/* Main Container */}
       <main className="flex-1 max-w-5xl w-full mx-auto p-4 md:p-6 space-y-6">
