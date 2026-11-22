@@ -14,6 +14,7 @@ interface NavbarProps {
   onLogin: () => void;
   onLogout: () => void;
   isConfigured: boolean;
+  selectedMonthLabel?: string;
 }
 
 export function Navbar({
@@ -26,6 +27,7 @@ export function Navbar({
   onLogin,
   onLogout,
   isConfigured,
+  selectedMonthLabel = 'Noviembre 2026',
 }: NavbarProps) {
   return (
     <header className="sticky top-0 z-40 bg-[#FFE500] border-b-[3.5px] border-black px-4 py-3">
@@ -43,8 +45,8 @@ export function Navbar({
             </span>
           </div>
 
-          <div className="hidden sm:flex items-center px-2.5 py-1 bg-white border-[2px] border-black shadow-[2px_2px_0px_#000] rounded text-xs font-bold uppercase">
-            NOV 2026 🗓️
+          <div className="hidden sm:flex items-center px-2.5 py-1 bg-white border-[2px] border-black shadow-[2px_2px_0px_#000] rounded text-xs font-black uppercase tracking-tight">
+            {selectedMonthLabel.toUpperCase()} 🗓️
           </div>
         </div>
 

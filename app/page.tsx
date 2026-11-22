@@ -1,17 +1,24 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { User } from 'firebase/auth';
 import { Navbar } from '../components/Navbar';
+import { MonthSelector } from '../components/MonthSelector';
 import { HeroStats } from '../components/HeroStats';
+import { CategoryPieChart } from '../components/CategoryPieChart';
 import { QuickInput } from '../components/QuickInput';
 import { InboxPending } from '../components/InboxPending';
 import { ExpenseList } from '../components/ExpenseList';
 import { KeepBatchModal } from '../components/KeepBatchModal';
 import { IntegrationsDrawer } from '../components/IntegrationsDrawer';
-import { AuthBanner } from '../components/AuthBanner';
-import { INITIAL_EXPENSES, INITIAL_PENDING } from '../lib/initialData';
+import { PrivateGate } from '../components/PrivateGate';
+import { INITIAL_EXPENSES } from '../lib/initialData';
 import { Expense } from '../lib/types';
+import { 
+  getAvailableMonths, 
+  filterExpensesByMonth, 
+  formatMonthLabel 
+} from '../lib/dateUtils';
 import { 
   loginWithGoogle, 
   logoutUser, 
@@ -31,18 +38,34 @@ const TARGET_EMAIL = process.env.NEXT_PUBLIC_AUTHORIZED_EMAIL || 'gretelfabregas
 
 export default function Home() {
   const [user, setUser] = useState<User | null>(null);
+  const [isAuthChecking, setIsAuthChecking] = useState(true);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [pendingExpenses, setPendingExpenses] = useState<Expense[]>([]);
   const [isBatchModalOpen, setIsBatchModalOpen] = useState(false);
   const [isIntegrationsOpen, setIsIntegrationsOpen] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
 
+  // Month navigation state
+  const [selectedMonthKey, setSelectedMonthKey] = useState<string>('2026-11');
+
+  // Authorization check (Strict privacy: Only Gretel can access her financial ledger)
+  const isAuthorized = Boolean(
+    user && 
+    user.email && 
+    user.email.toLowerCase() === TARGET_EMAIL.toLowerCase()
+  );
+
   // 1. Listen to Firebase Auth state
   useEffect(() => {
     const unsubscribe = onUserAuthStateChanged(async (currentUser) => {
       setUser(currentUser);
+      setIsAuthChecking(false);
 
-      if (currentUser && isFirebaseConfigured) {
+      if (
+        currentUser && 
+        currentUser.email?.toLowerCase() === TARGET_EMAIL.toLowerCase() && 
+        isFirebaseConfigured
+      ) {
         // Automatically seed her 70 initial expenses if her Firestore database is empty
         try {
           await seedInitialExpensesIfEmpty(currentUser.uid, INITIAL_EXPENSES);
@@ -55,10 +78,9 @@ export default function Home() {
     return () => unsubscribe();
   }, []);
 
-  // 2. Load and Sync Expenses
+  // 2. Load and Sync Expenses from Firestore (ONLY when Gretel is authorized)
   useEffect(() => {
-    // If logged into Firebase
-    if (user && isFirebaseConfigured) {
+    if (user && isAuthorized && isFirebaseConfigured) {
       const unsubExpenses = subscribeToUserExpenses(user.uid, (cloudExpenses) => {
         setExpenses(cloudExpenses);
         setIsLoaded(true);
@@ -73,41 +95,26 @@ export default function Home() {
         unsubPending();
       };
     } else {
-      // Fallback: LocalStorage
-      try {
-        const savedExpenses = localStorage.getItem('mis_gastos_items_v1');
-        if (savedExpenses) {
-          setExpenses(JSON.parse(savedExpenses));
-        } else {
-          setExpenses(INITIAL_EXPENSES);
-        }
-
-        const savedPending = localStorage.getItem('mis_gastos_pending_v1');
-        if (savedPending) {
-          setPendingExpenses(JSON.parse(savedPending));
-        } else {
-          setPendingExpenses(INITIAL_PENDING);
-        }
-      } catch (e) {
-        setExpenses(INITIAL_EXPENSES);
-        setPendingExpenses(INITIAL_PENDING);
-      }
+      // Privacy safeguard: Zero data rendered or kept in memory for unauthenticated visitors
+      setExpenses([]);
+      setPendingExpenses([]);
       setIsLoaded(true);
     }
-  }, [user]);
+  }, [user, isAuthorized]);
 
-  // Save to localStorage when changed (if not connected to Firebase)
-  useEffect(() => {
-    if (isLoaded && (!user || !isFirebaseConfigured)) {
-      localStorage.setItem('mis_gastos_items_v1', JSON.stringify(expenses));
-    }
-  }, [expenses, isLoaded, user]);
+  // Months available based on actual expenses
+  const availableMonths = useMemo(() => {
+    return getAvailableMonths(expenses);
+  }, [expenses]);
 
-  useEffect(() => {
-    if (isLoaded && (!user || !isFirebaseConfigured)) {
-      localStorage.setItem('mis_gastos_pending_v1', JSON.stringify(pendingExpenses));
-    }
-  }, [pendingExpenses, isLoaded, user]);
+  // Filtered expenses for active month
+  const monthlyExpenses = useMemo(() => {
+    return filterExpensesByMonth(expenses, selectedMonthKey);
+  }, [expenses, selectedMonthKey]);
+
+  const selectedMonthLabel = useMemo(() => {
+    return formatMonthLabel(selectedMonthKey);
+  }, [selectedMonthKey]);
 
   // Handlers for Authentication
   const handleLogin = async () => {
@@ -121,6 +128,8 @@ export default function Home() {
   const handleLogout = async () => {
     try {
       await logoutUser();
+      setExpenses([]);
+      setPendingExpenses([]);
     } catch (error: any) {
       alert('Error al cerrar sesión: ' + (error.message || error));
     }
@@ -221,12 +230,12 @@ export default function Home() {
   };
 
   const handleExportCSV = () => {
-    if (expenses.length === 0) {
-      alert('No hay gastos para exportar');
+    if (monthlyExpenses.length === 0) {
+      alert('No hay gastos en el período seleccionado para exportar.');
       return;
     }
     const headers = ['Fecha', 'Concepto', 'Categoría', 'Método', 'Moneda', 'Monto'];
-    const rows = expenses.map(e => [
+    const rows = monthlyExpenses.map(e => [
       e.date,
       `"${e.title.replace(/"/g, '""')}"`,
       `"${e.category}"`,
@@ -238,12 +247,42 @@ export default function Home() {
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `la_ratoneta_${TARGET_EMAIL}_${new Date().toISOString().split('T')[0]}.csv`);
+    link.setAttribute('download', `la_ratoneta_${selectedMonthKey}_${TARGET_EMAIL}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
   };
 
+  // 1. Initial Auth Loading Splash
+  if (isAuthChecking) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#FFE500] p-4 text-center space-y-4">
+        <div className="w-20 h-20 bg-white border-[3px] border-black shadow-[4px_4px_0px_#000] rounded-2xl p-3 flex items-center justify-center animate-bounce">
+          <img src="/ratita.svg" alt="La Ratoneta" className="w-full h-full object-contain" />
+        </div>
+        <div className="bg-white border-[2px] border-black px-4 py-2 rounded shadow-[2px_2px_0px_#000]">
+          <span className="font-black text-sm uppercase tracking-tight text-black">
+            DESPERTANDO A LA RATONETA 🧀...
+          </span>
+        </div>
+      </div>
+    );
+  }
+
+  // 2. Strict Privacy Gate: If user is not authenticated or not Gretel, lock access!
+  if (!isAuthorized) {
+    return (
+      <PrivateGate
+        user={user}
+        authorizedEmail={TARGET_EMAIL}
+        onLogin={handleLogin}
+        onLogout={handleLogout}
+        isConfigured={isFirebaseConfigured}
+      />
+    );
+  }
+
+  // 3. Authenticated & Authorized Dashboard for Gretel
   return (
     <div className="min-h-screen flex flex-col bg-[#FFE500] pb-16">
       {/* Navigation Bar */}
@@ -257,21 +296,32 @@ export default function Home() {
         onLogin={handleLogin}
         onLogout={handleLogout}
         isConfigured={isFirebaseConfigured}
+        selectedMonthLabel={selectedMonthLabel}
       />
 
       {/* Main Container */}
       <main className="flex-1 max-w-5xl w-full mx-auto p-4 md:p-6 space-y-6">
         
-        {/* Authentication & Cloud Sync Banner */}
-        <AuthBanner
-          user={user}
-          isConfigured={isFirebaseConfigured}
-          onLogin={handleLogin}
-          authorizedEmail={TARGET_EMAIL}
+        {/* Month Selector Bar */}
+        <MonthSelector
+          currentMonthKey={selectedMonthKey}
+          availableMonths={availableMonths}
+          onSelectMonth={setSelectedMonthKey}
+          monthlyCount={monthlyExpenses.length}
         />
 
-        {/* Hero Card with Totals and Budget Meter */}
-        <HeroStats expenses={expenses} budgetARS={1800000} />
+        {/* Hero Card with Totals, Cash vs Digital & Budget Meter */}
+        <HeroStats 
+          expenses={monthlyExpenses} 
+          monthLabel={selectedMonthLabel}
+          budgetARS={1800000} 
+        />
+
+        {/* Category Donut / Pie Chart with Percentages & Legend */}
+        <CategoryPieChart
+          expenses={monthlyExpenses}
+          selectedMonthLabel={selectedMonthLabel}
+        />
 
         {/* Ultra-fast Smart Input (Keep style) */}
         <QuickInput
@@ -279,7 +329,7 @@ export default function Home() {
           onOpenBatchModal={() => setIsBatchModalOpen(true)}
         />
 
-        {/* Inbox: Automatic Ingestion Queue */}
+        {/* Inbox: Automatic Ingestion Queue (Mercado Pago, MODO, Gmail) */}
         <InboxPending
           pendingExpenses={pendingExpenses}
           onConfirm={handleConfirmPending}
@@ -289,7 +339,7 @@ export default function Home() {
 
         {/* Full Expenses Ledger with Filter chips and Search */}
         <ExpenseList
-          expenses={expenses}
+          expenses={monthlyExpenses}
           onDeleteExpense={handleDeleteExpense}
         />
       </main>

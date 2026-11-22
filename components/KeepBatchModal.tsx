@@ -85,17 +85,23 @@ Panadería 700`;
 export function KeepBatchModal({ isOpen, onClose, onImportExpenses }: KeepBatchModalProps) {
   const [text, setText] = useState('');
   const [previewExpenses, setPreviewExpenses] = useState<Expense[]>([]);
+  const [batchDate, setBatchDate] = useState(new Date().toISOString().split('T')[0]);
 
   if (!isOpen) return null;
 
-  const handleTextChange = (val: string) => {
+  const handleTextChange = (val: string, dateToUse = batchDate) => {
     setText(val);
     const parsed = parseRawKeepText(val);
-    setPreviewExpenses(parsed);
+    setPreviewExpenses(parsed.map(p => ({ ...p, date: dateToUse })));
+  };
+
+  const handleDateChange = (newDate: string) => {
+    setBatchDate(newDate);
+    setPreviewExpenses(prev => prev.map(p => ({ ...p, date: newDate })));
   };
 
   const handleLoadSample = () => {
-    handleTextChange(SAMPLE_KEEP_NOTES);
+    handleTextChange(SAMPLE_KEEP_NOTES, batchDate);
   };
 
   const handleImport = () => {
@@ -139,12 +145,21 @@ export function KeepBatchModal({ isOpen, onClose, onImportExpenses }: KeepBatchM
             <p className="text-xs font-bold text-slate-700">
               Pegá el texto tal cual lo anotás en tu Keep o bloc de notas (una línea por gasto):
             </p>
-            <button
-              onClick={handleLoadSample}
-              className="px-2.5 py-1 bg-[#00E5FF] border-[2px] border-black rounded text-[11px] font-black uppercase shadow-[2px_2px_0px_#000] hover:bg-[#00cbe2]"
-            >
-              ⚡ Cargar lista de prueba ({SAMPLE_KEEP_NOTES.split('\n').length} items)
-            </button>
+            <div className="flex items-center gap-2">
+              <label className="text-[11px] font-black uppercase text-slate-700">Fecha del lote:</label>
+              <input
+                type="date"
+                value={batchDate}
+                onChange={(e) => handleDateChange(e.target.value)}
+                className="bg-white border-[2px] border-black rounded px-2 py-0.5 text-xs font-bold shadow-[1.5px_1.5px_0px_#000]"
+              />
+              <button
+                onClick={handleLoadSample}
+                className="px-2.5 py-1 bg-[#00E5FF] border-[2px] border-black rounded text-[11px] font-black uppercase shadow-[2px_2px_0px_#000] hover:bg-[#00cbe2]"
+              >
+                ⚡ Cargar lista de prueba
+              </button>
+            </div>
           </div>
 
           {/* Text Area */}
