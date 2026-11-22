@@ -186,23 +186,23 @@ export function CategoryPieChart({ expenses, selectedMonthLabel }: CategoryPieCh
             <PieIcon className="w-5 h-5 text-black" />
           </div>
           <div>
-            <h2 className="font-black text-base uppercase tracking-tight text-black flex items-center gap-1.5">
+            <h2 className="font-black text-base sm:text-lg uppercase tracking-tight text-black flex items-center gap-2 flex-wrap">
               <span>GRÁFICO DE TORTA POR CATEGORÍA</span>
-              <span className="text-[10px] bg-black text-white px-2 py-0.5 rounded uppercase">
+              <span className="text-xs bg-black text-white px-2.5 py-0.5 rounded uppercase font-black">
                 {selectedMonthLabel}
               </span>
             </h2>
-            <p className="text-xs text-slate-600 font-bold">
+            <p className="text-xs sm:text-sm text-slate-600 font-bold">
               Distribución porcentual de los consumos del período
             </p>
           </div>
         </div>
 
         {/* Currency Switcher */}
-        <div className="flex items-center gap-1 bg-[#FFF9D2] border-[2px] border-black rounded p-1 shadow-[2px_2px_0px_#000]">
+        <div className="flex items-center gap-1.5 bg-[#FFF9D2] border-[2px] border-black rounded-lg p-1.5 shadow-[2px_2px_0px_#000]">
           <button
             onClick={() => { setCurrency('ARS'); setHoveredCategory(null); }}
-            className={`px-3 py-1 rounded text-xs font-black transition-all ${
+            className={`px-3.5 py-1.5 rounded-md text-xs sm:text-sm font-black transition-all ${
               currency === 'ARS'
                 ? 'bg-[#22C55E] text-black border border-black shadow-[1px_1px_0px_#000]'
                 : 'text-slate-600 hover:text-black'
@@ -212,7 +212,7 @@ export function CategoryPieChart({ expenses, selectedMonthLabel }: CategoryPieCh
           </button>
           <button
             onClick={() => { setCurrency('USD'); setHoveredCategory(null); }}
-            className={`px-3 py-1 rounded text-xs font-black transition-all ${
+            className={`px-3.5 py-1.5 rounded-md text-xs sm:text-sm font-black transition-all ${
               currency === 'USD'
                 ? 'bg-[#00E5FF] text-black border border-black shadow-[1px_1px_0px_#000]'
                 : 'text-slate-600 hover:text-black'
@@ -323,25 +323,25 @@ export function CategoryPieChart({ expenses, selectedMonthLabel }: CategoryPieCh
                         : 'border-black/30 bg-slate-50 hover:border-black hover:bg-white'
                     }`}
                   >
-                    <div className="flex items-center justify-between gap-1.5 mb-1.5">
-                      <div className="flex items-center gap-1.5 min-w-0">
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                      <div className="flex items-center gap-2 min-w-0">
                         <span 
-                          className="w-3.5 h-3.5 rounded border border-black shrink-0 flex items-center justify-center text-black"
+                          className="w-4 h-4 rounded border border-black shrink-0 flex items-center justify-center text-black"
                           style={{ backgroundColor: slice.color }}
                         >
                           {getCategoryIcon(slice.category)}
                         </span>
-                        <span className="text-xs font-black text-black truncate">
+                        <span className="text-sm font-black text-black truncate">
                           {slice.category}
                         </span>
                       </div>
-                      <span className="text-xs font-black text-black bg-white px-1.5 py-0.5 rounded border border-black shrink-0 shadow-[1px_1px_0px_#000]">
+                      <span className="text-xs sm:text-sm font-black text-black bg-white px-2 py-0.5 rounded border border-black shrink-0 shadow-[1px_1px_0px_#000]">
                         {slice.percentage.toFixed(1)}%
                       </span>
                     </div>
 
                     {/* Mini progress bar */}
-                    <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden border border-black/40 mb-1.5">
+                    <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden border border-black/40 mb-2">
                       <div 
                         className="h-full rounded-full"
                         style={{ 
@@ -351,11 +351,11 @@ export function CategoryPieChart({ expenses, selectedMonthLabel }: CategoryPieCh
                       />
                     </div>
 
-                    <div className="flex items-center justify-between text-[11px]">
-                      <span className="font-extrabold text-black">
+                    <div className="flex items-center justify-between text-xs sm:text-sm">
+                      <span className="font-black text-black text-sm sm:text-base">
                         {formatCurrency(slice.amount)}
                       </span>
-                      <span className="text-[10px] font-bold text-slate-500">
+                      <span className="text-xs font-bold text-slate-500">
                         {slice.count} compras
                       </span>
                     </div>

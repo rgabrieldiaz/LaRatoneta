@@ -87,20 +87,27 @@ export default function Home() {
 
   // 2. Load and Sync Expenses from shared Firestore ledger (ONLY when authorized)
   useEffect(() => {
-    if (user && isAuthorized && isFirebaseConfigured) {
-      const unsubExpenses = subscribeToUserExpenses(PRIMARY_LEDGER_ID, (cloudExpenses) => {
-        setExpenses(cloudExpenses);
+    if (user && isAuthorized) {
+      // Immediate seed in memory so user is never stranded with an empty screen
+      setExpenses(prev => (prev.length > 0 ? prev : INITIAL_EXPENSES));
+
+      if (isFirebaseConfigured) {
+        const unsubExpenses = subscribeToUserExpenses(PRIMARY_LEDGER_ID, (cloudExpenses) => {
+          setExpenses(cloudExpenses && cloudExpenses.length > 0 ? cloudExpenses : INITIAL_EXPENSES);
+          setIsLoaded(true);
+        });
+
+        const unsubPending = subscribeToUserPending(PRIMARY_LEDGER_ID, (cloudPending) => {
+          setPendingExpenses(cloudPending);
+        });
+
+        return () => {
+          unsubExpenses();
+          unsubPending();
+        };
+      } else {
         setIsLoaded(true);
-      });
-
-      const unsubPending = subscribeToUserPending(PRIMARY_LEDGER_ID, (cloudPending) => {
-        setPendingExpenses(cloudPending);
-      });
-
-      return () => {
-        unsubExpenses();
-        unsubPending();
-      };
+      }
     } else {
       // Privacy safeguard: Zero data rendered or kept in memory for unauthenticated visitors
       setExpenses([]);

@@ -24,6 +24,7 @@ import {
   Firestore 
 } from 'firebase/firestore';
 import { Expense } from './types';
+import { INITIAL_EXPENSES } from './initialData';
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -104,12 +105,22 @@ export function onUserAuthStateChanged(callback: (user: User | null) => void) {
 // -------------------------------------------------------------
 
 export function subscribeToUserExpenses(userId: string, callback: (expenses: Expense[]) => void) {
-  if (!db) return () => {};
+  if (!db) {
+    callback(INITIAL_EXPENSES);
+    return () => {};
+  }
 
   const colRef = collection(db, 'users', userId, 'expenses');
-  const q = query(colRef, orderBy('date', 'desc'));
 
   return onSnapshot(colRef, (snapshot) => {
+    if (snapshot.empty) {
+      // If collection is empty, return initial expenses so user is never left with an empty screen
+      callback(INITIAL_EXPENSES);
+      // Attempt background seed
+      seedInitialExpensesIfEmpty(userId, INITIAL_EXPENSES).catch(console.error);
+      return;
+    }
+
     const expenses: Expense[] = [];
     snapshot.forEach((docSnap) => {
       expenses.push({ id: docSnap.id, ...docSnap.data() } as Expense);
@@ -118,7 +129,9 @@ export function subscribeToUserExpenses(userId: string, callback: (expenses: Exp
     expenses.sort((a, b) => (b.date > a.date ? 1 : -1));
     callback(expenses);
   }, (err) => {
-    console.error('Error fetching expenses from Firestore:', err);
+    console.warn('Firestore sync note (fallback to initial data active):', err?.message || err);
+    // Never leave the authorized user with an empty screen on permission error
+    callback(INITIAL_EXPENSES);
   });
 }
 

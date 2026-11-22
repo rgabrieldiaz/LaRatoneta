@@ -48,15 +48,15 @@ export function MonthSelector({
             <ChevronLeft className="w-5 h-5 text-black" />
           </button>
 
-          <div className="flex items-center gap-1.5 px-3 py-1 font-black text-xs sm:text-sm text-black">
-            <Calendar className="w-4 h-4 text-black" />
+          <div className="flex items-center gap-2 px-3.5 py-1.5 font-black text-sm sm:text-base text-black">
+            <Calendar className="w-5 h-5 text-black" />
             <span>{formatMonthLabel(currentMonthKey)}</span>
           </div>
 
           <button
             onClick={handleNext}
             disabled={currentIndex <= 0 || currentMonthKey === 'ALL'}
-            className="p-1.5 hover:bg-yellow-400 disabled:opacity-30 disabled:hover:bg-transparent transition-colors border-l border-black"
+            className="p-2 hover:bg-yellow-400 disabled:opacity-30 disabled:hover:bg-transparent transition-colors border-l border-black"
             title="Mes siguiente"
           >
             <ChevronRight className="w-5 h-5 text-black" />
@@ -68,7 +68,7 @@ export function MonthSelector({
           value={currentMonthKey}
           onChange={(e) => onSelectMonth(e.target.value)}
           aria-label="Seleccionar mes para filtrar gastos"
-          className="bg-white border-[2px] border-black text-xs font-bold px-2.5 py-1.5 rounded shadow-[2px_2px_0px_#000] cursor-pointer hover:bg-slate-50 focus:outline-none"
+          className="bg-white border-[2px] border-black text-xs sm:text-sm font-black px-3 py-2 rounded-lg shadow-[2px_2px_0px_#000] cursor-pointer hover:bg-slate-50 focus:outline-none"
         >
           {availableMonths.map((m) => (
             <option key={m} value={m}>
@@ -80,8 +80,8 @@ export function MonthSelector({
       </div>
 
       {/* Info Badge */}
-      <div className="flex items-center gap-2">
-        <span className="bg-[#22C55E] text-black border border-black font-black text-xs px-2.5 py-1 rounded shadow-[1px_1px_0px_#000]">
+      <div className="flex items-center gap-2.5">
+        <span className="bg-[#22C55E] text-black border border-black font-black text-xs sm:text-sm px-3 py-1.5 rounded-lg shadow-[1px_1px_0px_#000]">
           {monthlyCount} {monthlyCount === 1 ? 'gasto' : 'gastos'}
         </span>
         {currentMonthKey !== 'ALL' && availableMonths.length > 0 && currentMonthKey !== availableMonths[0] && (

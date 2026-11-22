@@ -81,14 +81,14 @@ export function QuickInput({ onAddExpense, onOpenBatchModal }: QuickInputProps) 
       </div>
 
       {/* Main Input Form */}
-      <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row items-stretch gap-2">
+      <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row items-stretch gap-2.5">
         <div className="relative flex-1">
           <input
             type="text"
             value={inputVal}
             onChange={(e) => setInputVal(e.target.value)}
             placeholder="Ej: chino 19510, taxi 4500, cafe 3200..."
-            className="w-full h-12 px-4 bg-white border-[3px] border-black rounded-lg text-sm font-bold placeholder:text-slate-400 placeholder:font-normal focus:outline-none focus:ring-0 shadow-[2px_2px_0px_#000]"
+            className="w-full h-14 px-4 bg-white border-[3px] border-black rounded-xl text-base sm:text-lg font-black placeholder:text-slate-400 placeholder:font-normal focus:outline-none focus:ring-0 shadow-[3px_3px_0px_#000]"
           />
         </div>
 
@@ -98,28 +98,28 @@ export function QuickInput({ onAddExpense, onOpenBatchModal }: QuickInputProps) 
           <button
             type="button"
             onClick={handleVoiceToggle}
-            className={`w-12 h-12 flex items-center justify-center border-[3px] border-black rounded-lg shadow-[2px_2px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all ${
+            className={`w-14 h-14 flex items-center justify-center border-[3px] border-black rounded-xl shadow-[3px_3px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all ${
               isListening ? 'bg-[#FF5376] text-white animate-pulse' : 'bg-[#22C55E] text-black'
             }`}
             title="Dictar por voz"
           >
-            <Mic className="w-5 h-5" />
+            <Mic className="w-6 h-6" />
           </button>
 
           {/* Add Button */}
           <button
             type="submit"
-            className="flex-1 sm:flex-none h-12 px-5 bg-[#FF5376] text-white border-[3px] border-black rounded-lg shadow-[3px_3px_0px_#000] font-black uppercase text-sm flex items-center justify-center gap-1.5 active:translate-x-1 active:translate-y-1 active:shadow-none transition-all hover:bg-[#ff3863]"
+            className="flex-1 sm:flex-none h-14 px-6 bg-[#FF5376] text-white border-[3px] border-black rounded-xl shadow-[3px_3px_0px_#000] font-black uppercase text-sm sm:text-base flex items-center justify-center gap-2 active:translate-x-1 active:translate-y-1 active:shadow-none transition-all hover:bg-[#ff3863]"
           >
-            <Plus className="w-5 h-5" />
+            <Plus className="w-6 h-6" />
             <span>+ AGREGAR 💥</span>
           </button>
         </div>
       </form>
 
       {/* Quick Presets for her daily frequent shops */}
-      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar pt-1">
-        <span className="text-[10px] font-black uppercase text-slate-700 shrink-0">ATAJOS:</span>
+      <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar pt-1">
+        <span className="text-xs font-black uppercase text-slate-700 shrink-0">ATAJOS:</span>
         {[
           { label: '🥡 Chino', val: 'Chino' },
           { label: '🥬 Verdulería', val: 'Verdulería' },
@@ -133,7 +133,7 @@ export function QuickInput({ onAddExpense, onOpenBatchModal }: QuickInputProps) 
             key={p.label}
             type="button"
             onClick={() => handleQuickPreset(p.val)}
-            className="px-2 py-0.5 bg-white border-[1.5px] border-black rounded text-[11px] font-bold shrink-0 shadow-[1px_1px_0px_#000] hover:bg-[#FFE500] active:translate-x-0.5 active:translate-y-0.5"
+            className="px-3 py-1.5 bg-white border-[2px] border-black rounded-lg text-xs sm:text-sm font-black shrink-0 shadow-[1.5px_1.5px_0px_#000] hover:bg-[#FFE500] active:translate-x-0.5 active:translate-y-0.5"
           >
             {p.label}
           </button>

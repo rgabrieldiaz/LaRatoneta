@@ -65,60 +65,60 @@ export function HeroStats({ expenses, monthLabel = 'Noviembre 2026', budgetARS =
   };
 
   return (
-    <div className="w-full brutal-card p-5 space-y-4 bg-white border-[3.5px] border-black shadow-[4px_4px_0px_#000]">
+    <div className="w-full brutal-card p-5 sm:p-6 space-y-5 bg-white border-[3.5px] border-black shadow-[4px_4px_0px_#000]">
       {/* Top Header Label */}
-      <div className="flex items-center justify-between flex-wrap gap-2">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded bg-[#FFE500] border-2 border-black flex items-center justify-center font-bold shadow-[1.5px_1.5px_0px_#000]">
-            <Wallet className="w-4 h-4 text-black" />
+      <div className="flex items-center justify-between flex-wrap gap-2 pb-1">
+        <div className="flex items-center gap-2.5">
+          <div className="w-9 h-9 rounded bg-[#FFE500] border-2 border-black flex items-center justify-center font-bold shadow-[2px_2px_0px_#000]">
+            <Wallet className="w-5 h-5 text-black" />
           </div>
           <div>
-            <h2 className="text-xs font-black tracking-wider uppercase text-slate-800">
+            <h2 className="text-sm sm:text-base font-black tracking-wider uppercase text-slate-800">
               TOTAL GASTADO EN {monthLabel.toUpperCase()}
             </h2>
-            <p className="text-[11px] text-slate-500 font-bold">{expenses.length} movimientos analizados</p>
+            <p className="text-xs font-bold text-slate-600">{expenses.length} movimientos analizados</p>
           </div>
         </div>
 
         <div className="flex items-center gap-1.5">
-          <span className="brutal-badge bg-[#22C55E] text-black px-2 py-0.5 text-[10px] font-black border border-black shadow-[1px_1px_0px_#000]">
-            VIVO • CLOUD SYNC ⚡
+          <span className="brutal-badge bg-[#22C55E] text-black px-2.5 py-1 text-xs font-black border border-black shadow-[1.5px_1.5px_0px_#000]">
+            EN VIVO ⚡
           </span>
         </div>
       </div>
 
-      {/* Hero Amounts */}
+      {/* Hero Amounts (Significantly larger numbers) */}
       <div className="flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-3 pt-1">
         <div>
-          <span className="text-3xl md:text-5xl font-black tracking-tight text-black">
+          <span className="text-4xl sm:text-6xl font-black tracking-tight text-black">
             {formatARS(totalARS)}
           </span>
-          <span className="ml-2 font-black text-sm uppercase text-slate-700">ARS</span>
+          <span className="ml-2 font-black text-base sm:text-lg uppercase text-slate-700">ARS</span>
         </div>
 
         {totalUSD > 0 && (
-          <div className="inline-flex items-center gap-1 px-3 py-1 bg-[#00E5FF] text-black border-[2.5px] border-black shadow-[2.5px_2.5px_0px_#000] rounded font-black text-sm">
-            <DollarSign className="w-4 h-4" />
+          <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-[#00E5FF] text-black border-[2.5px] border-black shadow-[2.5px_2.5px_0px_#000] rounded-lg font-black text-sm sm:text-base">
+            <DollarSign className="w-5 h-5" />
             <span>+ {formatUSD(totalUSD)} USD TARJETA</span>
           </div>
         )}
       </div>
 
       {/* Cash vs Digital Bar (Critical for Argentine reality) */}
-      <div className="bg-[#FFF9D2] border-[2px] border-black rounded-lg p-3 space-y-2 shadow-[2px_2px_0px_#000]">
-        <div className="flex items-center justify-between text-xs font-black">
+      <div className="bg-[#FFF9D2] border-[2px] border-black rounded-xl p-3.5 space-y-2 shadow-[2px_2px_0px_#000]">
+        <div className="flex items-center justify-between text-xs sm:text-sm font-black flex-wrap gap-2">
           <span className="flex items-center gap-1.5 text-black">
-            <Banknote className="w-4 h-4 text-[#FF5376]" />
+            <Banknote className="w-5 h-5 text-[#FF5376]" />
             <span>💵 EFECTIVO: {formatARS(cashARS)} ({cashPct}%)</span>
           </span>
           <span className="flex items-center gap-1.5 text-black">
-            <Smartphone className="w-4 h-4 text-[#22C55E]" />
+            <Smartphone className="w-5 h-5 text-[#22C55E]" />
             <span>📱 DIGITAL / APPS: {formatARS(digitalARS)} ({digitalPct}%)</span>
           </span>
         </div>
 
         {/* Dual progress bar */}
-        <div className="w-full h-3 bg-slate-200 border-[2px] border-black rounded-full overflow-hidden flex">
+        <div className="w-full h-3.5 bg-slate-200 border-[2px] border-black rounded-full overflow-hidden flex">
           <div 
             style={{ width: `${cashPct}%` }} 
             className="bg-[#FFE500] h-full border-r border-black" 
@@ -134,7 +134,7 @@ export function HeroStats({ expenses, monthLabel = 'Noviembre 2026', budgetARS =
 
       {/* Budget Progress Bar */}
       <div className="space-y-1.5 pt-1">
-        <div className="flex items-center justify-between text-xs font-black uppercase">
+        <div className="flex items-center justify-between text-xs sm:text-sm font-black uppercase">
           <span className="text-slate-800">
             PRESUPUESTO: {budgetPct}% CONSUMIDO
           </span>
@@ -143,34 +143,34 @@ export function HeroStats({ expenses, monthLabel = 'Noviembre 2026', budgetARS =
           </span>
         </div>
 
-        <div className="w-full h-5 bg-[#EEEEEE] border-[3px] border-black rounded relative overflow-hidden">
+        <div className="w-full h-6 bg-[#EEEEEE] border-[3px] border-black rounded-lg relative overflow-hidden">
           <div
             className={`h-full border-r-[3px] border-black transition-all duration-500 ${
               budgetPct > 85 ? 'bg-[#FF5376]' : budgetPct > 65 ? 'bg-[#FFE500]' : 'bg-[#22C55E]'
             }`}
             style={{ width: `${budgetPct}%` }}
           />
-          <div className="absolute inset-0 flex items-center justify-end pr-2 pointer-events-none">
-            <span className="text-[10px] font-black text-black">{budgetPct}%</span>
+          <div className="absolute inset-0 flex items-center justify-end pr-3 pointer-events-none">
+            <span className="text-xs font-black text-black">{budgetPct}%</span>
           </div>
         </div>
       </div>
 
       {/* Quick Metrics Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 pt-1">
-        <div className="bg-[#F8F8F8] border-[2px] border-black rounded p-2.5 shadow-[2px_2px_0px_#000]">
-          <span className="text-[10px] font-black uppercase text-slate-500 block">PROMEDIO / DÍA ACTIVO</span>
-          <span className="text-base font-black text-black mt-0.5 block">{formatARS(dailyAverageARS)}</span>
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-1">
+        <div className="bg-[#F8F8F8] border-[2px] border-black rounded-lg p-3 shadow-[2px_2px_0px_#000]">
+          <span className="text-xs font-black uppercase text-slate-500 block">PROMEDIO / DÍA</span>
+          <span className="text-lg sm:text-xl font-black text-black mt-1 block">{formatARS(dailyAverageARS)}</span>
         </div>
 
-        <div className="bg-[#F8F8F8] border-[2px] border-black rounded p-2.5 shadow-[2px_2px_0px_#000]">
-          <span className="text-[10px] font-black uppercase text-slate-500 block">DÍAS CON COMPRAS</span>
-          <span className="text-base font-black text-black mt-0.5 block">{uniqueDays} DÍAS</span>
+        <div className="bg-[#F8F8F8] border-[2px] border-black rounded-lg p-3 shadow-[2px_2px_0px_#000]">
+          <span className="text-xs font-black uppercase text-slate-500 block">DÍAS CON COMPRAS</span>
+          <span className="text-lg sm:text-xl font-black text-black mt-1 block">{uniqueDays} DÍAS</span>
         </div>
 
-        <div className="col-span-2 sm:col-span-1 bg-[#F8F8F8] border-[2px] border-black rounded p-2.5 shadow-[2px_2px_0px_#000]">
-          <span className="text-[10px] font-black uppercase text-slate-500 block">TOP CATEGORÍA</span>
-          <span className="text-xs font-black text-[#FF5376] mt-0.5 block truncate">
+        <div className="col-span-2 sm:col-span-1 bg-[#F8F8F8] border-[2px] border-black rounded-lg p-3 shadow-[2px_2px_0px_#000]">
+          <span className="text-xs font-black uppercase text-slate-500 block">TOP CATEGORÍA</span>
+          <span className="text-sm font-black text-[#FF5376] mt-1 block truncate">
             {sortedCategories[0]?.[0] || 'Varios'}: {formatARS(sortedCategories[0]?.[1] || 0)}
           </span>
         </div>
@@ -178,14 +178,14 @@ export function HeroStats({ expenses, monthLabel = 'Noviembre 2026', budgetARS =
 
       {/* Top Categories Pills */}
       {sortedCategories.length > 0 && (
-        <div className="pt-2 border-t-[2px] border-black flex flex-wrap gap-1.5 items-center">
-          <span className="text-[10px] font-black uppercase text-slate-600 mr-1">TOP GASTOS:</span>
+        <div className="pt-2 border-t-[2px] border-black flex flex-wrap gap-2 items-center">
+          <span className="text-xs font-black uppercase text-slate-600 mr-1">TOP GASTOS:</span>
           {sortedCategories.map(([cat, val], idx) => {
             const colors = ['bg-[#FFE500]', 'bg-[#00E5FF]', 'bg-[#22C55E]', 'bg-[#D4B2FF]'];
             return (
               <div
                 key={cat}
-                className={`px-2 py-0.5 border-[1.5px] border-black rounded text-[11px] font-black ${colors[idx % colors.length]}`}
+                className={`px-3 py-1 border-[2px] border-black rounded-lg text-xs sm:text-sm font-black shadow-[1.5px_1.5px_0px_#000] ${colors[idx % colors.length]}`}
               >
                 {cat}: {formatARS(val)}
               </div>
