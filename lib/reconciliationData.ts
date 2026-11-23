@@ -275,8 +275,48 @@ export const RIPIO_RECONCILED_EXPENSES: Expense[] = [
   },
 ];
 
+export const NARANJA_X_RECONCILED_EXPENSES: Expense[] = [
+  {
+    id: 'nx-subte-1',
+    title: 'Subte QR (Naranja X)',
+    amount: 944,
+    currency: 'ARS',
+    category: 'Transporte',
+    method: 'CUENTA',
+    date: '2026-11-07',
+    isConfirmed: true,
+    source: 'MANUAL',
+    note: 'QR Subte (Reintegro 50% promo Naranja X aplicado)',
+  },
+  {
+    id: 'nx-subte-2',
+    title: 'Subte QR (Naranja X)',
+    amount: 944,
+    currency: 'ARS',
+    category: 'Transporte',
+    method: 'CUENTA',
+    date: '2026-11-09',
+    isConfirmed: true,
+    source: 'MANUAL',
+    note: 'QR Subte (Reintegro 50% promo Naranja X aplicado)',
+  },
+  {
+    id: 'nx-subte-3',
+    title: 'Subte QR (Naranja X)',
+    amount: 944,
+    currency: 'ARS',
+    category: 'Transporte',
+    method: 'CUENTA',
+    date: '2026-11-09',
+    isConfirmed: true,
+    source: 'MANUAL',
+    note: 'QR Subte (Reintegro 50% promo Naranja X aplicado)',
+  },
+];
+
 export const NOVEMBER_RECONCILED_EXPENSES: Expense[] = [
   ...PERSONAL_PAY_RECONCILED_EXPENSES,
   ...MERCADO_PAGO_RECONCILED_EXPENSES,
   ...RIPIO_RECONCILED_EXPENSES,
+  ...NARANJA_X_RECONCILED_EXPENSES,
 ];

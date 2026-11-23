@@ -818,6 +818,42 @@ export const INITIAL_EXPENSES: Expense[] = [
     "isRefund": true,
     "source": "MANUAL",
     "note": "Reintegro Plus clientes Personal"
+  },
+  {
+    "id": "nx-subte-1",
+    "title": "Subte QR (Naranja X)",
+    "amount": 944,
+    "currency": "ARS",
+    "category": "Transporte",
+    "method": "CUENTA",
+    "date": "2026-11-07",
+    "isConfirmed": true,
+    "source": "MANUAL",
+    "note": "QR Subte (Reintegro 50% promo Naranja X aplicado)"
+  },
+  {
+    "id": "nx-subte-2",
+    "title": "Subte QR (Naranja X)",
+    "amount": 944,
+    "currency": "ARS",
+    "category": "Transporte",
+    "method": "CUENTA",
+    "date": "2026-11-09",
+    "isConfirmed": true,
+    "source": "MANUAL",
+    "note": "QR Subte (Reintegro 50% promo Naranja X aplicado)"
+  },
+  {
+    "id": "nx-subte-3",
+    "title": "Subte QR (Naranja X)",
+    "amount": 944,
+    "currency": "ARS",
+    "category": "Transporte",
+    "method": "CUENTA",
+    "date": "2026-11-09",
+    "isConfirmed": true,
+    "source": "MANUAL",
+    "note": "QR Subte (Reintegro 50% promo Naranja X aplicado)"
   }
 ];
 

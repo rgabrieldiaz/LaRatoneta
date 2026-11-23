@@ -412,12 +412,12 @@ export async function saveFixedServicesToFirestore(
 }
 
 /**
- * Sync Reconciled Expenses to Firestore (Personal Pay, Mercado Pago, Ripio - Nov 2026)
+ * Sync Reconciled Expenses to Firestore (Personal Pay, Mercado Pago, Ripio, Naranja X - Nov 2026)
  */
 export async function syncPersonalPayReconciliation(userId: string): Promise<void> {
   if (!db) return;
   try {
-    const flagDocRef = doc(db, 'users', userId, 'settings', 'reconciled_nov2026_v2');
+    const flagDocRef = doc(db, 'users', userId, 'settings', 'reconciled_nov2026_v3');
     const flagSnap = await getDoc(flagDocRef);
     if (flagSnap.exists()) return;
 
