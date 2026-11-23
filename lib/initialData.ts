@@ -86,15 +86,15 @@ export const INITIAL_EXPENSES: Expense[] = [
   },
   {
     "id": "8",
-    "title": "Carrefour",
-    "amount": 10000,
+    "title": "Supermercado Vea",
+    "amount": 10082,
     "currency": "ARS",
     "category": "Supermercados",
     "method": "CUENTA",
-    "date": "2026-11-19",
+    "date": "2026-11-17",
     "isConfirmed": true,
     "source": "KEEP_BATCH",
-    "note": "Ripio Prepaga NFC"
+    "note": "Ripio Prepaga NFC (Cashback $9.982 aplicado)"
   },
   {
     "id": "9",
@@ -125,22 +125,23 @@ export const INITIAL_EXPENSES: Expense[] = [
     "amount": 6378,
     "currency": "ARS",
     "category": "Cuidado & Varios",
-    "method": "EFECTIVO",
-    "date": "2026-11-19",
+    "method": "CUENTA",
+    "date": "2026-11-03",
     "isConfirmed": true,
-    "source": "KEEP_BATCH"
+    "source": "KEEP_BATCH",
+    "note": "Mercado Pago (21:08 hs)"
   },
   {
     "id": "12",
-    "title": "Transporte",
-    "amount": 500,
+    "title": "Sube Viajes (Buses)",
+    "amount": 1143,
     "currency": "ARS",
     "category": "Transporte",
-    "method": "SUBE",
-    "date": "2026-11-18",
+    "method": "CUENTA",
+    "date": "2026-11-17",
     "isConfirmed": true,
     "source": "KEEP_BATCH",
-    "note": "Carga / Viaje SUBE"
+    "note": "SUBE Débito Mercado Pago"
   },
   {
     "id": "13",
@@ -273,14 +274,15 @@ export const INITIAL_EXPENSES: Expense[] = [
   },
   {
     "id": "24",
-    "title": "Panadería",
+    "title": "Panadería (Martin Bergnach)",
     "amount": 1200,
     "currency": "ARS",
     "category": "Frescos & Panadería",
-    "method": "EFECTIVO",
-    "date": "2026-11-15",
+    "method": "CUENTA",
+    "date": "2026-11-11",
     "isConfirmed": true,
-    "source": "KEEP_BATCH"
+    "source": "KEEP_BATCH",
+    "note": "Mercado Pago QR"
   },
   {
     "id": "25",
@@ -379,14 +381,15 @@ export const INITIAL_EXPENSES: Expense[] = [
   },
   {
     "id": "35",
-    "title": "Panadería",
+    "title": "Panadería (Martin Bergnach)",
     "amount": 1200,
     "currency": "ARS",
     "category": "Frescos & Panadería",
-    "method": "EFECTIVO",
-    "date": "2026-11-12",
+    "method": "CUENTA",
+    "date": "2026-11-10",
     "isConfirmed": true,
-    "source": "KEEP_BATCH"
+    "source": "KEEP_BATCH",
+    "note": "Mercado Pago QR"
   },
   {
     "id": "36",
@@ -539,15 +542,15 @@ export const INITIAL_EXPENSES: Expense[] = [
   },
   {
     "id": "49",
-    "title": "Sube",
-    "amount": 900,
+    "title": "Sube Viajes (Buses)",
+    "amount": 925,
     "currency": "ARS",
     "category": "Transporte",
-    "method": "SUBE",
-    "date": "2026-11-08",
+    "method": "CUENTA",
+    "date": "2026-11-01",
     "isConfirmed": true,
     "source": "KEEP_BATCH",
-    "note": "Carga / Viaje SUBE"
+    "note": "Ripio Prepaga NFC"
   },
   {
     "id": "50",
@@ -609,14 +612,15 @@ export const INITIAL_EXPENSES: Expense[] = [
   },
   {
     "id": "55",
-    "title": "Supermercado",
-    "amount": 10000,
+    "title": "Market Monserrat",
+    "amount": 10045,
     "currency": "ARS",
     "category": "Supermercados",
     "method": "CUENTA",
-    "date": "2026-11-06",
+    "date": "2026-11-01",
     "isConfirmed": true,
-    "source": "KEEP_BATCH"
+    "source": "KEEP_BATCH",
+    "note": "Ripio Prepaga NFC (Cashback $9.945 aplicado)"
   },
   {
     "id": "56",
@@ -642,15 +646,15 @@ export const INITIAL_EXPENSES: Expense[] = [
   },
   {
     "id": "58",
-    "title": "Comida",
+    "title": "Rotisería WK",
     "amount": 6160,
     "currency": "ARS",
     "category": "Comida & Salidas",
     "method": "CUENTA",
-    "date": "2026-11-05",
+    "date": "2026-11-19",
     "isConfirmed": true,
     "source": "KEEP_BATCH",
-    "note": "Mercado Pago / Billetera"
+    "note": "Ripio QR"
   },
   {
     "id": "59",
@@ -761,10 +765,10 @@ export const INITIAL_EXPENSES: Expense[] = [
     "currency": "ARS",
     "category": "Supermercados",
     "method": "CUENTA",
-    "date": "2026-11-02",
+    "date": "2026-11-21",
     "isConfirmed": true,
     "source": "KEEP_BATCH",
-    "note": "Ripio Prepaga NFC"
+    "note": "Ripio Prepaga NFC (Cashback $10.000 aplicado)"
   },
   {
     "id": "69",
@@ -773,10 +777,10 @@ export const INITIAL_EXPENSES: Expense[] = [
     "currency": "ARS",
     "category": "Supermercados",
     "method": "CUENTA",
-    "date": "2026-11-02",
+    "date": "2026-11-19",
     "isConfirmed": true,
     "source": "KEEP_BATCH",
-    "note": "Ripio Prepaga NFC"
+    "note": "Ripio Prepaga NFC (Cashback $10.000 aplicado)"
   },
   {
     "id": "70",
