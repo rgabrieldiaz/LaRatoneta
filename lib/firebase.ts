@@ -21,10 +21,12 @@ import {
   orderBy, 
   writeBatch, 
   getDocs,
+  getDoc,
   Firestore 
 } from 'firebase/firestore';
 import { CategoryBudgets, Expense, FixedService, MerchantRule, MerchantRulesMap, SalaryConfig } from './types';
 import { INITIAL_EXPENSES } from './initialData';
+import { PERSONAL_PAY_RECONCILED_EXPENSES } from './reconciliationData';
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -407,4 +409,21 @@ export async function saveFixedServicesToFirestore(
   if (!db) return;
   const docRef = doc(db, 'users', userId, 'settings', 'fixed_services');
   await setDoc(docRef, { services, updatedAt: new Date().toISOString() });
+}
+
+/**
+ * Sync Personal Pay Reconciled Expenses to Firestore (Nov 2026)
+ */
+export async function syncPersonalPayReconciliation(userId: string): Promise<void> {
+  if (!db) return;
+  try {
+    const flagDocRef = doc(db, 'users', userId, 'settings', 'reconciled_ppay_nov2026');
+    const flagSnap = await getDoc(flagDocRef);
+    if (flagSnap.exists()) return;
+
+    await bulkImportToFirestore(userId, PERSONAL_PAY_RECONCILED_EXPENSES);
+    await setDoc(flagDocRef, { appliedAt: new Date().toISOString() });
+  } catch (err) {
+    console.error('Error syncing Personal Pay reconciliation to Firestore:', err);
+  }
 }

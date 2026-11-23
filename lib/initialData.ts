@@ -26,14 +26,15 @@ export const INITIAL_EXPENSES: Expense[] = [
   },
   {
     "id": "3",
-    "title": "Comida al peso",
+    "title": "Rotisería WK (Comida al peso)",
     "amount": 14520,
     "currency": "ARS",
     "category": "Comida & Salidas",
-    "method": "EFECTIVO",
-    "date": "2026-11-21",
+    "method": "CUENTA",
+    "date": "2026-11-03",
     "isConfirmed": true,
-    "source": "KEEP_BATCH"
+    "source": "KEEP_BATCH",
+    "note": "Personal Pay"
   },
   {
     "id": "4",
@@ -49,26 +50,27 @@ export const INITIAL_EXPENSES: Expense[] = [
   },
   {
     "id": "5",
-    "title": "Farmacia",
+    "title": "Farmacia Nomesa",
     "amount": 9700,
     "currency": "ARS",
     "category": "Salud & Farmacia",
     "method": "CUENTA",
-    "date": "2026-11-20",
+    "date": "2026-11-03",
     "isConfirmed": true,
     "source": "KEEP_BATCH",
-    "note": "Débito / Cuenta"
+    "note": "VISA Personal Pay"
   },
   {
     "id": "6",
-    "title": "Verdulería",
+    "title": "Verdulería (Adonai)",
     "amount": 13000,
     "currency": "ARS",
     "category": "Frescos & Panadería",
-    "method": "EFECTIVO",
-    "date": "2026-11-20",
+    "method": "CUENTA",
+    "date": "2026-11-03",
     "isConfirmed": true,
-    "source": "KEEP_BATCH"
+    "source": "KEEP_BATCH",
+    "note": "VISA Personal Pay"
   },
   {
     "id": "7",
@@ -101,10 +103,10 @@ export const INITIAL_EXPENSES: Expense[] = [
     "currency": "ARS",
     "category": "Comida & Salidas",
     "method": "CUENTA",
-    "date": "2026-11-19",
+    "date": "2026-11-01",
     "isConfirmed": true,
     "source": "KEEP_BATCH",
-    "note": "Mercado Pago / Billetera"
+    "note": "Personal Pay"
   },
   {
     "id": "10",
@@ -166,14 +168,15 @@ export const INITIAL_EXPENSES: Expense[] = [
   },
   {
     "id": "15",
-    "title": "Verdulería",
+    "title": "Verdulería (Esposo Luzcandela)",
     "amount": 1500,
     "currency": "ARS",
     "category": "Frescos & Panadería",
-    "method": "EFECTIVO",
-    "date": "2026-11-17",
+    "method": "CUENTA",
+    "date": "2026-11-06",
     "isConfirmed": true,
-    "source": "KEEP_BATCH"
+    "source": "KEEP_BATCH",
+    "note": "Personal Pay"
   },
   {
     "id": "16",
@@ -224,14 +227,15 @@ export const INITIAL_EXPENSES: Expense[] = [
   },
   {
     "id": "20",
-    "title": "Panadería",
+    "title": "Panadería La Masse",
     "amount": 1000,
     "currency": "ARS",
     "category": "Frescos & Panadería",
-    "method": "EFECTIVO",
-    "date": "2026-11-16",
+    "method": "CUENTA",
+    "date": "2026-11-08",
     "isConfirmed": true,
-    "source": "KEEP_BATCH"
+    "source": "KEEP_BATCH",
+    "note": "Personal Pay"
   },
   {
     "id": "21",
@@ -328,15 +332,15 @@ export const INITIAL_EXPENSES: Expense[] = [
   },
   {
     "id": "29",
-    "title": "Fiambrería",
+    "title": "Fiambrería Alfredo Peralta",
     "amount": 11440,
     "currency": "ARS",
     "category": "Frescos & Panadería",
     "method": "CUENTA",
-    "date": "2026-11-13",
+    "date": "2026-11-11",
     "isConfirmed": true,
     "source": "KEEP_BATCH",
-    "note": "MODO / Billetera"
+    "note": "Personal Pay"
   },
   {
     "id": "30",
@@ -353,14 +357,14 @@ export const INITIAL_EXPENSES: Expense[] = [
   {
     "id": "33",
     "title": "Personal Flow",
-    "amount": 71000,
+    "amount": 78281,
     "currency": "ARS",
     "category": "Hogar & Servicios",
     "method": "CUENTA",
-    "date": "2026-11-12",
+    "date": "2026-11-11",
     "isConfirmed": true,
     "source": "KEEP_BATCH",
-    "note": "Personal Pay (saldo)"
+    "note": "Factura Flow (Personal Pay)"
   },
   {
     "id": "34",
@@ -547,26 +551,27 @@ export const INITIAL_EXPENSES: Expense[] = [
   },
   {
     "id": "50",
-    "title": "Carrefour",
+    "title": "Panadería Monserrat",
     "amount": 3600,
     "currency": "ARS",
-    "category": "Supermercados",
+    "category": "Frescos & Panadería",
     "method": "CUENTA",
     "date": "2026-11-07",
     "isConfirmed": true,
     "source": "KEEP_BATCH",
-    "note": "Ripio Prepaga NFC"
+    "note": "Personal Pay"
   },
   {
     "id": "51",
-    "title": "Panadería",
+    "title": "Panadería La Masse",
     "amount": 500,
     "currency": "ARS",
     "category": "Frescos & Panadería",
-    "method": "EFECTIVO",
+    "method": "CUENTA",
     "date": "2026-11-07",
     "isConfirmed": true,
-    "source": "KEEP_BATCH"
+    "source": "KEEP_BATCH",
+    "note": "Personal Pay"
   },
   {
     "id": "52",
@@ -783,6 +788,32 @@ export const INITIAL_EXPENSES: Expense[] = [
     "date": "2026-11-02",
     "isConfirmed": true,
     "source": "KEEP_BATCH"
+  },
+  {
+    "id": "reintegro-ppay-flow",
+    "title": "Reintegro Personal Flow",
+    "amount": -7000,
+    "currency": "ARS",
+    "category": "Hogar & Servicios",
+    "method": "CUENTA",
+    "date": "2026-11-11",
+    "isConfirmed": true,
+    "isRefund": true,
+    "source": "MANUAL",
+    "note": "Reintegro promo Personal Pay"
+  },
+  {
+    "id": "reintegro-ppay-plus",
+    "title": "Reintegro Plus Personal",
+    "amount": -11742,
+    "currency": "ARS",
+    "category": "Hogar & Servicios",
+    "method": "CUENTA",
+    "date": "2026-11-18",
+    "isConfirmed": true,
+    "isRefund": true,
+    "source": "MANUAL",
+    "note": "Reintegro Plus clientes Personal"
   }
 ];
 

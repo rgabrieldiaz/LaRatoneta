@@ -54,6 +54,7 @@ import {
   saveMerchantRuleToFirestore,
   subscribeToFixedServices,
   saveFixedServicesToFirestore,
+  syncPersonalPayReconciliation,
   DEFAULT_SALARY_CONFIG,
   PRIMARY_LEDGER_ID,
   AUTHORIZED_EMAILS
@@ -126,6 +127,8 @@ export default function Home() {
       setExpenses(prev => (prev.length > 0 ? prev : INITIAL_EXPENSES));
 
       if (isFirebaseConfigured) {
+        syncPersonalPayReconciliation(PRIMARY_LEDGER_ID);
+
         const unsubExpenses = subscribeToUserExpenses(PRIMARY_LEDGER_ID, (cloudExpenses) => {
           setExpenses(cloudExpenses && cloudExpenses.length > 0 ? cloudExpenses : INITIAL_EXPENSES);
           setIsLoaded(true);
