@@ -5,7 +5,7 @@ import { generateInstallmentExpenses } from '../lib/dateUtils';
 import { parseLocalizedAmount, parseRawKeepText } from '../lib/keepParser';
 import { fetchDolarMepRate, FALLBACK_DOLAR_MEP } from '../lib/dolarApi';
 import { Category, Expense, MerchantRulesMap, PaymentMethod } from '../lib/types';
-import { Zap, Mic, Plus, ClipboardList, SlidersHorizontal, CheckCheck } from 'lucide-react';
+import { Zap, Mic, Plus, ClipboardList, SlidersHorizontal, CheckCheck, Percent, Sparkles } from 'lucide-react';
 
 interface QuickInputProps {
   onAddExpense: (expense: Expense | Expense[]) => void;
@@ -57,6 +57,13 @@ export function QuickInput({
   const [manualIsRefund, setManualIsRefund] = useState(false);
   const [manualInstallments, setManualInstallments] = useState(1);
 
+  // Promo / Reintegro calculator states
+  const [applyPromo, setApplyPromo] = useState(false);
+  const [promoType, setPromoType] = useState<'PERCENT' | 'FIXED'>('PERCENT');
+  const [promoPercentVal, setPromoPercentVal] = useState('50');
+  const [promoFixedAmount, setPromoFixedAmount] = useState('');
+  const [promoCap, setPromoCap] = useState('10000');
+
   useEffect(() => {
     fetchDolarMepRate().then((rate) => setMepRate(rate));
     return () => {
@@ -104,12 +111,37 @@ export function QuickInput({
 
     const calculatedAmount =
       manualCurrency === 'USD' ? Math.round(numericAmount * mepRate) : numericAmount;
-    const finalAmountARS = manualIsRefund ? -Math.abs(calculatedAmount) : calculatedAmount;
+
+    // Promo / Reintegro calculation
+    let grossTicket = calculatedAmount;
+    let discount = 0;
+    let promoNoteDetail = '';
+
+    if (applyPromo && !manualIsRefund && grossTicket > 0) {
+      if (promoType === 'PERCENT') {
+        const pct = Math.max(0, Math.min(100, parseFloat(promoPercentVal) || 0));
+        const rawDiscount = (grossTicket * pct) / 100;
+        const cap = parseFloat(promoCap) || 0;
+        discount = cap > 0 && rawDiscount > cap ? cap : rawDiscount;
+        const hitCap = cap > 0 && rawDiscount >= cap;
+        promoNoteDetail = `Promo ${pct}%${hitCap ? ` (Tope $${Math.round(cap).toLocaleString('es-AR')})` : ''} - Ahorro $${Math.round(discount).toLocaleString('es-AR')}`;
+      } else {
+        const fixedVal = parseFloat(promoFixedAmount) || 0;
+        discount = Math.min(grossTicket, fixedVal);
+        promoNoteDetail = `Reintegro promo -$${Math.round(discount).toLocaleString('es-AR')}`;
+      }
+    }
+
+    const netAmountARS = Math.max(0, Math.round(grossTicket - discount));
+    const finalAmountARS = manualIsRefund
+      ? -Math.abs(calculatedAmount)
+      : (discount > 0 ? netAmountARS : calculatedAmount);
+
     const usdNote =
       manualCurrency === 'USD'
         ? `🇺🇸 U$S ${numericAmount.toFixed(2)} (Dólar MEP $${Math.round(mepRate).toLocaleString('es-AR')})`
         : '';
-    const combinedNote = [usdNote, manualNote.trim()].filter(Boolean).join(' • ');
+    const combinedNote = [usdNote, promoNoteDetail, manualNote.trim()].filter(Boolean).join(' • ');
 
     const newExpense: Expense = {
       id: `manual-${Date.now()}`,
@@ -121,6 +153,7 @@ export function QuickInput({
       date: manualDate,
       isConfirmed: true,
       source: 'MANUAL',
+      ...(discount > 0 ? { grossAmount: grossTicket, discountAmount: Math.round(discount) } : {}),
       ...(manualIsRefund ? { isRefund: true } : {}),
       ...(combinedNote ? { note: combinedNote } : {}),
     };
@@ -151,6 +184,10 @@ export function QuickInput({
     setManualNote('');
     setManualIsRefund(false);
     setManualInstallments(1);
+    setApplyPromo(false);
+    setPromoPercentVal('50');
+    setPromoFixedAmount('');
+    setPromoCap('10000');
   };
 
   const handleQuickPreset = (presetName: string) => {
@@ -252,6 +289,30 @@ export function QuickInput({
       setVoiceHint('No se pudo activar el micrófono. Usá el micrófono 🎙️ del teclado.');
     }
   };
+
+  // Live promo calculations for Manual form
+  const rawManualTicket = parseLocalizedAmount(manualAmount, manualCurrency === 'USD');
+  const numericManualTicket = isNaN(rawManualTicket)
+    ? 0
+    : manualCurrency === 'USD'
+    ? Math.round(rawManualTicket * mepRate)
+    : rawManualTicket;
+
+  let livePromoDiscount = 0;
+  let liveHitCap = false;
+  if (applyPromo && !manualIsRefund && numericManualTicket > 0) {
+    if (promoType === 'PERCENT') {
+      const pct = Math.max(0, Math.min(100, parseFloat(promoPercentVal) || 0));
+      const rawDiscount = (numericManualTicket * pct) / 100;
+      const cap = parseFloat(promoCap) || 0;
+      livePromoDiscount = cap > 0 && rawDiscount > cap ? cap : rawDiscount;
+      liveHitCap = cap > 0 && rawDiscount >= cap;
+    } else {
+      const fixedVal = parseFloat(promoFixedAmount) || 0;
+      livePromoDiscount = Math.min(numericManualTicket, fixedVal);
+    }
+  }
+  const liveNetManual = Math.max(0, Math.round(numericManualTicket - livePromoDiscount));
 
   return (
     <div className="w-full brutal-card-purple p-4 sm:p-5 space-y-3.5">
@@ -457,6 +518,151 @@ export function QuickInput({
               )}
             </div>
           </div>
+
+          {/* Promo / Reintegro Calculator Section */}
+          {!manualIsRefund && (
+            <div className="bg-emerald-50/80 border-[2px] border-emerald-500 rounded-xl p-3 space-y-2.5">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => setApplyPromo(!applyPromo)}
+                  className={`px-3 py-1 text-xs font-black rounded-lg border-[2px] border-black transition-colors flex items-center gap-1.5 shadow-[2px_2px_0px_#000] ${
+                    applyPromo ? 'bg-[#22C55E] text-black' : 'bg-white text-slate-700 hover:bg-slate-50'
+                  }`}
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>{applyPromo ? '🎉 Reintegro / Promo activada' : '+ Aplicar Reintegro / Promo'}</span>
+                </button>
+                {applyPromo && (
+                  <span className="text-[11px] font-bold text-emerald-800">
+                    Calcula el monto neto y registra tu ahorro
+                  </span>
+                )}
+              </div>
+
+              {applyPromo && (
+                <div className="space-y-2.5 pt-1">
+                  {/* Preset chips */}
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="text-xs font-black uppercase text-slate-700 mr-1">Promo:</span>
+                    {[20, 30, 40, 50].map((p) => (
+                      <button
+                        key={p}
+                        type="button"
+                        onClick={() => {
+                          setPromoType('PERCENT');
+                          setPromoPercentVal(p.toString());
+                        }}
+                        className={`px-2.5 py-1 text-xs font-black rounded-md border-[1.5px] border-black shadow-[1px_1px_0px_#000] transition-colors ${
+                          promoType === 'PERCENT' && promoPercentVal === p.toString()
+                            ? 'bg-[#FFE500] text-black'
+                            : 'bg-white text-slate-700 hover:bg-slate-100'
+                        }`}
+                      >
+                        %{p}
+                      </button>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => setPromoType('PERCENT')}
+                      className={`px-2 py-1 text-xs font-black rounded-md border-[1.5px] border-black shadow-[1px_1px_0px_#000] ${
+                        promoType === 'PERCENT' && ![20, 30, 40, 50].includes(Number(promoPercentVal))
+                          ? 'bg-[#FFE500] text-black'
+                          : 'bg-white text-slate-700'
+                      }`}
+                    >
+                      % Otro
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPromoType('FIXED')}
+                      className={`px-2.5 py-1 text-xs font-black rounded-md border-[1.5px] border-black shadow-[1px_1px_0px_#000] ${
+                        promoType === 'FIXED' ? 'bg-[#FFE500] text-black' : 'bg-white text-slate-700'
+                      }`}
+                    >
+                      $ Monto fijo
+                    </button>
+                  </div>
+
+                  {/* Inputs row */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    {promoType === 'PERCENT' ? (
+                      <div>
+                        <label className="block text-[11px] font-black uppercase text-slate-700 mb-0.5">
+                          % Porcentaje de reintegro
+                        </label>
+                        <div className="relative">
+                          <input
+                            type="number"
+                            min="1"
+                            max="100"
+                            value={promoPercentVal}
+                            onChange={(e) => setPromoPercentVal(e.target.value)}
+                            placeholder="50"
+                            className="w-full h-9 px-2.5 pr-7 bg-white border-[2px] border-black rounded-lg text-xs font-black focus:outline-none"
+                          />
+                          <span className="absolute right-2.5 top-2 text-xs font-black text-slate-400">%</span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div>
+                        <label className="block text-[11px] font-black uppercase text-slate-700 mb-0.5">
+                          Monto Reintegro ($)
+                        </label>
+                        <input
+                          type="number"
+                          min="1"
+                          value={promoFixedAmount}
+                          onChange={(e) => setPromoFixedAmount(e.target.value)}
+                          placeholder="Ej: 7000"
+                          className="w-full h-9 px-2.5 bg-white border-[2px] border-black rounded-lg text-xs font-black focus:outline-none"
+                        />
+                      </div>
+                    )}
+
+                    <div>
+                      <label className="block text-[11px] font-black uppercase text-slate-700 mb-0.5">
+                        Tope Reintegro ($ opcional)
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        value={promoCap}
+                        onChange={(e) => setPromoCap(e.target.value)}
+                        placeholder="Ej: 10000"
+                        className="w-full h-9 px-2.5 bg-white border-[2px] border-black rounded-lg text-xs font-black focus:outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Live Calculation preview pill */}
+                  {livePromoDiscount > 0 && (
+                    <div className="bg-white border-[2px] border-black rounded-lg p-2.5 flex items-center justify-between text-xs font-black shadow-[2px_2px_0px_#000]">
+                      <div>
+                        <span className="text-emerald-700 block">
+                          🎉 Ahorro: -${Math.round(livePromoDiscount).toLocaleString('es-AR')}
+                          {liveHitCap && (
+                            <span className="ml-1 text-[10px] text-amber-700 font-bold bg-amber-50 px-1 py-0.5 rounded border border-amber-300">
+                              Tope alcanzado
+                            </span>
+                          )}
+                        </span>
+                        <span className="text-slate-500 text-[11px] font-medium">
+                          Ticket original: ${Math.round(numericManualTicket).toLocaleString('es-AR')}
+                        </span>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-[10px] uppercase text-slate-500 block">Neto a registrar</span>
+                        <span className="text-base font-black text-black">
+                          ${Math.round(liveNetManual).toLocaleString('es-AR')}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>

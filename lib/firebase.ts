@@ -417,7 +417,7 @@ export async function saveFixedServicesToFirestore(
 export async function syncPersonalPayReconciliation(userId: string): Promise<void> {
   if (!db) return;
   try {
-    const flagDocRef = doc(db, 'users', userId, 'settings', 'reconciled_nov2026_v3');
+    const flagDocRef = doc(db, 'users', userId, 'settings', 'reconciled_nov2026_v4');
     const flagSnap = await getDoc(flagDocRef);
     if (flagSnap.exists()) return;
 

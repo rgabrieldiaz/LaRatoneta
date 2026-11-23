@@ -223,6 +223,8 @@ export const RIPIO_RECONCILED_EXPENSES: Expense[] = [
     date: '2026-11-01',
     isConfirmed: true,
     source: 'KEEP_BATCH',
+    grossAmount: 19990,
+    discountAmount: 9945,
     note: 'Ripio Prepaga NFC (Cashback $9.945 aplicado)',
   },
   {
@@ -235,6 +237,8 @@ export const RIPIO_RECONCILED_EXPENSES: Expense[] = [
     date: '2026-11-17',
     isConfirmed: true,
     source: 'KEEP_BATCH',
+    grossAmount: 20064,
+    discountAmount: 9982,
     note: 'Ripio Prepaga NFC (Cashback $9.982 aplicado)',
   },
   {
@@ -247,6 +251,8 @@ export const RIPIO_RECONCILED_EXPENSES: Expense[] = [
     date: '2026-11-19',
     isConfirmed: true,
     source: 'KEEP_BATCH',
+    grossAmount: 22306,
+    discountAmount: 10000,
     note: 'Ripio Prepaga NFC (Cashback $10.000 aplicado)',
   },
   {
@@ -271,6 +277,8 @@ export const RIPIO_RECONCILED_EXPENSES: Expense[] = [
     date: '2026-11-21',
     isConfirmed: true,
     source: 'KEEP_BATCH',
+    grossAmount: 21086,
+    discountAmount: 10000,
     note: 'Ripio Prepaga NFC (Cashback $10.000 aplicado)',
   },
 ];
@@ -286,6 +294,8 @@ export const NARANJA_X_RECONCILED_EXPENSES: Expense[] = [
     date: '2026-11-07',
     isConfirmed: true,
     source: 'MANUAL',
+    grossAmount: 1887,
+    discountAmount: 943,
     note: 'QR Subte (Reintegro 50% promo Naranja X aplicado)',
   },
   {
@@ -298,6 +308,8 @@ export const NARANJA_X_RECONCILED_EXPENSES: Expense[] = [
     date: '2026-11-09',
     isConfirmed: true,
     source: 'MANUAL',
+    grossAmount: 1887,
+    discountAmount: 943,
     note: 'QR Subte (Reintegro 50% promo Naranja X aplicado)',
   },
   {
@@ -310,6 +322,8 @@ export const NARANJA_X_RECONCILED_EXPENSES: Expense[] = [
     date: '2026-11-09',
     isConfirmed: true,
     source: 'MANUAL',
+    grossAmount: 1887,
+    discountAmount: 943,
     note: 'QR Subte (Reintegro 50% promo Naranja X aplicado)',
   },
 ];

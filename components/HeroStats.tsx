@@ -35,6 +35,9 @@ export function HeroStats({
   const totalRefundsARS = arsExpenses
     .filter(e => e.amount < 0 || e.isRefund)
     .reduce((sum, e) => sum + Math.abs(e.amount), 0);
+  const totalDiscountsARS = arsExpenses
+    .reduce((sum, e) => sum + (e.discountAmount || 0), 0);
+  const totalSavingsARS = totalRefundsARS + totalDiscountsARS;
   const uniqueDays = new Set(expenses.map(e => e.date)).size || 1;
   const dailyAverageARS = Math.round(totalARS / uniqueDays);
   const averageTicketARS = arsExpenses.length > 0 ? Math.round(totalARS / arsExpenses.length) : 0;
@@ -115,9 +118,16 @@ export function HeroStats({
             {formatARS(totalARS)}
           </span>
           <span className="ml-2 font-black text-base sm:text-lg uppercase text-slate-700">ARS</span>
-          {totalRefundsARS > 0 && (
-            <span className="inline-flex items-center gap-1 text-xs font-black text-emerald-800 bg-emerald-100 border border-emerald-500 rounded px-2.5 py-1 ml-2.5 shadow-[1px_1px_0px_#000]">
-              💸 Reintegros: +{formatARS(totalRefundsARS)}
+          {totalSavingsARS > 0 && (
+            <span
+              className="inline-flex items-center gap-1 text-xs font-black text-emerald-800 bg-emerald-100 border border-emerald-500 rounded px-2.5 py-1 ml-2.5 shadow-[1px_1px_0px_#000]"
+              title={
+                totalDiscountsARS > 0 && totalRefundsARS > 0
+                  ? `Reintegros: ${formatARS(totalRefundsARS)} • Ahorro en compras: ${formatARS(totalDiscountsARS)}`
+                  : undefined
+              }
+            >
+              🎉 Ahorro en promos: +{formatARS(totalSavingsARS)}
             </span>
           )}
         </div>

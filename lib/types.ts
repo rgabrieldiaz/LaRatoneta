@@ -35,6 +35,8 @@ export interface Expense {
   note?: string;
   isRefund?: boolean;
   installments?: ExpenseInstallments;
+  grossAmount?: number;
+  discountAmount?: number;
 }
 
 export interface FixedService {

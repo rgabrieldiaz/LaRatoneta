@@ -295,6 +295,14 @@ export function ExpenseList({ expenses, onDeleteExpense, onUpdateExpense }: Expe
                         💸 Reintegro
                       </span>
                     )}
+                    {item.discountAmount && item.discountAmount > 0 && (
+                      <span
+                        className="px-1.5 py-0.5 rounded text-[10px] font-black uppercase bg-emerald-100 text-emerald-800 border border-emerald-500 shrink-0"
+                        title={`Ticket original: $${(item.grossAmount || (item.amount + item.discountAmount)).toLocaleString('es-AR')}`}
+                      >
+                        🎉 Promo -${item.discountAmount.toLocaleString('es-AR')}
+                      </span>
+                    )}
                     {item.installments && (
                       <span className="px-1.5 py-0.5 rounded text-[10px] font-black uppercase bg-purple-100 text-purple-900 border border-purple-400 shrink-0">
                         💳 Cuota {item.installments.current}/{item.installments.total}
@@ -319,6 +327,11 @@ export function ExpenseList({ expenses, onDeleteExpense, onUpdateExpense }: Expe
               {/* Right: Amount, Edit & Delete */}
               <div className="flex items-center gap-2 sm:gap-3 shrink-0">
                 <div className="text-right mr-1">
+                  {item.grossAmount && item.discountAmount && item.discountAmount > 0 ? (
+                    <span className="text-[11px] font-bold text-slate-400 line-through block leading-none mb-0.5">
+                      ${item.grossAmount.toLocaleString('es-AR')}
+                    </span>
+                  ) : null}
                   <span
                     className={`font-black text-lg sm:text-2xl block leading-tight ${
                       item.amount < 0 || item.isRefund ? 'text-emerald-600' : 'text-black'
@@ -412,6 +425,8 @@ export function ExpenseList({ expenses, onDeleteExpense, onUpdateExpense }: Expe
                   ...editingExpense,
                   amount: finalAmount,
                   isRefund: isRefund ? true : undefined,
+                  grossAmount: editingExpense.grossAmount && editingExpense.grossAmount > 0 ? editingExpense.grossAmount : undefined,
+                  discountAmount: editingExpense.discountAmount && editingExpense.discountAmount > 0 ? editingExpense.discountAmount : undefined,
                 });
                 setEditingExpense(null);
               }}
@@ -533,6 +548,68 @@ export function ExpenseList({ expenses, onDeleteExpense, onUpdateExpense }: Expe
                       </option>
                     ))}
                   </select>
+                </div>
+              </div>
+
+              {/* Promo / Ahorro Fields */}
+              <div className="bg-emerald-50/70 border border-emerald-400 rounded-lg p-2.5 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-black text-emerald-900 flex items-center gap-1">
+                    🎉 Promo / Ahorro aplicado (opcional)
+                  </span>
+                  {(editingExpense.discountAmount || editingExpense.grossAmount) ? (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setEditingExpense({
+                          ...editingExpense,
+                          discountAmount: undefined,
+                          grossAmount: undefined,
+                        })
+                      }
+                      className="text-[10px] font-bold text-red-600 underline"
+                    >
+                      Quitar promo
+                    </button>
+                  ) : null}
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-[10px] font-black uppercase text-slate-600 mb-0.5">
+                      Ticket Original ($)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={editingExpense.grossAmount || ''}
+                      onChange={(e) =>
+                        setEditingExpense({
+                          ...editingExpense,
+                          grossAmount: e.target.value ? Math.abs(parseFloat(e.target.value)) : undefined,
+                        })
+                      }
+                      placeholder="Ej: 21086"
+                      className="w-full h-9 px-2 bg-white border border-black rounded text-xs font-bold"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-black uppercase text-slate-600 mb-0.5">
+                      Ahorro / Reintegro ($)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={editingExpense.discountAmount || ''}
+                      onChange={(e) =>
+                        setEditingExpense({
+                          ...editingExpense,
+                          discountAmount: e.target.value ? Math.abs(parseFloat(e.target.value)) : undefined,
+                        })
+                      }
+                      placeholder="Ej: 10000"
+                      className="w-full h-9 px-2 bg-white border border-black rounded text-xs font-bold"
+                    />
+                  </div>
                 </div>
               </div>
 
